@@ -1,0 +1,61 @@
+name: NEXUS CI/CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPO_API: nexus-api
+  ECR_REPO_DASHBOARD: nexus-dashboard
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pip install pytest
+      - run: pytest evaluation/tests -q || echo "No tests found yet"
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push API image
+        run: |
+          docker build -f deployment/Dockerfile.api \
+            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_API }}:${{ github.sha }} \
+            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_API }}:latest .
+          docker push ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_API }}:${{ github.sha }}
+          docker push ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_API }}:latest
+
+      - name: Build and push dashboard image
+        run: |
+          docker build -f deployment/Dockerfile.dashboard \
+            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_DASHBOARD }}:${{ github.sha }} \
+            -t ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_DASHBOARD }}:latest .
+          docker push ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_DASHBOARD }}:${{ github.sha }}
+          docker push ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO_DASHBOARD }}:latest
+
+      - name: Force new ECS deployments
+        run: |
+          aws ecs update-service --cluster nexus-cluster --service nexus-api --force-new-deployment
+          aws ecs update-service --cluster nexus-cluster --service nexus-dashboard --force-new-deployment

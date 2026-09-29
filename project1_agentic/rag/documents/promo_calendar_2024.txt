@@ -1,0 +1,26 @@
+NEXUS Marketing — 2024 Promotional Calendar (Internal Reference)
+
+Q1 2024:
+- Jan 1-7: New Year clearance, storewide 15% off, all categories.
+- Feb 10-14: Valentine's promotion, Electronics and Home & Kitchen categories, 10% off.
+
+Q2 2024:
+- Apr 1-15: Spring refresh sale, Home & Kitchen and Apparel, 20% off.
+- May 20-27: Pre-summer electronics push, 12% off, paid search spend increased 40%
+  week-over-week to support the promotion.
+
+Q3 2024:
+- Jul 4-10: Summer clearance, storewide 18% off.
+- Sep 1-5: Back-to-school promotion, Electronics and Office categories, 15% off.
+
+Q4 2024:
+- Nov 24-30 (Black Friday week): Storewide 25-30% off, heaviest promotional period of
+  the year. Paid search and social spend both roughly doubled versus average month.
+- Dec 1-24: Holiday season, rolling category-specific promotions, 10-20% off depending
+  on category, replenished as needed based on inventory position.
+- Dec 26-31: Post-holiday clearance, storewide 20% off to clear excess holiday
+  inventory ahead of year-end.
+
+Note: Discount percentages above reflect the intended promotional discount and may not
+exactly match the discount_pct captured in individual transactions due to coupon
+stacking and loyalty-tier adjustments at checkout.

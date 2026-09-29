@@ -1,0 +1,20 @@
+NEXUS Supply Chain — Supplier Relationship Notes (Internal Reference)
+
+General reliability guidance:
+Suppliers with a reliability_score below 0.70 are considered high-risk and should have
+a backup/secondary supplier identified for any product where they are the primary
+source. Suppliers between 0.70 and 0.85 are monitored monthly. Above 0.85 is considered
+stable.
+
+Known disruption windows:
+- Q1 2023: Two overseas suppliers reported longer-than-normal lead times (adding
+  roughly 5-10 days) due to regional shipping congestion. This primarily affected
+  Electronics and Home & Kitchen category products sourced from those suppliers.
+- Q3 2024: A packaging materials shortage affected several suppliers' ability to meet
+  standard minimum order quantities (MOQ) on schedule, causing intermittent restock
+  delays across multiple categories.
+
+Escalation process:
+Any product showing both (a) reliability_score below 0.70 for its primary supplier and
+(b) current stock at or below its reorder point should be flagged HIGH risk and
+escalated to procurement within 48 hours to avoid a stockout.

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+models/
+mlruns/
+data/raw/*.csv
+!data/raw/.gitkeep
+external/
+.terraform/
+*.tfstate
+*.tfstate.backup
+terraform.tfvars

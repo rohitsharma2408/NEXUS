@@ -1,0 +1,26 @@
+NEXUS Retail — Returns & Refunds Policy (Internal Reference)
+
+Effective for all regions, all product categories.
+
+1. Standard Return Window
+Customers may return unopened or defective items within 30 days of delivery for a full
+refund. Electronics and appliances carry a shortened 14-day window due to higher fraud
+and depreciation risk in that category.
+
+2. Defective Item Handling
+Items marked "defective" at return intake are automatically flagged for quality review.
+If a single product line exceeds a 10% return rate in a rolling 30-day window with
+"defective" as the primary reason, the Supplier Relations team is notified to open a
+quality investigation with that product's primary supplier.
+
+3. Restocking Rules
+Items returned in original packaging and undamaged are restocked within 3 business days.
+Items marked "wrong item" or "no longer needed" are restocked at standard priority.
+Items marked "defective" are NOT restocked by default and are routed to the returns
+warehouse for inspection.
+
+4. Known Operational Note (Q4 2023 / Q4 2024)
+During the November-December peak season, return rates typically rise 15-20% above
+baseline due to holiday gifting and higher order volume. This is expected seasonal
+behavior, not a product quality signal, unless a specific category or product deviates
+significantly from that seasonal pattern.
