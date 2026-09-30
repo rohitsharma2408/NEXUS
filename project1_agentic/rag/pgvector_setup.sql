@@ -12,7 +12,9 @@ CREATE TABLE business_documents (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_business_documents_embedding
-    ON business_documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+-- No ANN index on purpose: an IVFFlat index with lists=100 on a tiny table returns EMPTY results
+-- (most clusters are empty). Exact scan is instant at this scale. Add an HNSW index only once
+-- the table holds thousands of chunks:
+--   CREATE INDEX ON business_documents USING hnsw (embedding vector_cosine_ops);
 
 GRANT SELECT ON business_documents TO nexus_readonly;

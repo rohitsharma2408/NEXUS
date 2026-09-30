@@ -1,0 +1,21 @@
+case,tables,MB,q
+106024162,2,0.005644,"For each type and component, what are their values for each date in 2020?"
+107157327,2,0.360645,What is the average of adj close and non-current investments in each year from 2015 to 2017?
+143360930,3,0.062058,What are the GDP and population of each state (by its full state name) in the most recent years that are common to both?
+255513606,5,0.547756,"For each email and program (indicated by their names) in this quarter (IsThisQuarter is True), what is the email clicked percentage (email clicked count, Activitytypeid = 11, divided by email sent count, Activitytypeid = 6)? Display only the ones with non-zero values."
+101248502,5,0.114453,What is the average percentage of women's shares in the house in each year with year greater than 1990 across different countries?
+283375085,5,0.499499,"For each title, what is their average salary on each date? Display the values by first divided by 1000."
+138548946,5,0.045455,What are the unique students counts by question and answer point?
+226605615,6,0.045444,"What are the numbers of cases, deaths, and recovered in each month (indicated by January, February etc) and day (indicated by integers)?"
+147349705,6,11.552699,What are the customers (by their names) with top 5 sales quantities with cy date being March 19?
+162319649-1,6,1.65253,"Considering only the furniture and technology categories in the west region with order dates being on or after 1/1/2015, what is the amount of the average profits of each subcategory minus the overall average profits?"
+169833271,8,0.004081,What are the total payment amounts by member names?
+157709950,8,0.433113,"What are the suicide rates per 100,000 population every year of OECD and non OECD members?"
+151056735,8,8.050776,What are the revenue and target for each business in the Area CEE?
+196073081,9,2.9502,"What are the quantities sold by animal family names, and region name?"
+111676720-1,12,0.542269,What is the average date difference of Byetta by profile descriptions?
+194321012,14,6.651981,"What is the net sales of all sold items for external customers in June, by each store name?"
+138368400,14,6.651981,"What is the amount of returns in dollars for each category, segment, and product?"
+244046227,21,0.430204,What is the total Saldo of each company (indicated by their names) that uses EUR with accTp type being B in different fiscal years?
+280113507-3,24,0.366166,How many courses are offered in each campus (indicated by their names)?
+229334275,52,0.053975,What is the average number of days to resolve cases in each calendar week (grouping cases by the dates on which they are resolved)?

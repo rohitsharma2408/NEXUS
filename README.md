@@ -1,87 +1,117 @@
-# NEXUS — AI Business Analyst
+# NEXUS — Agentic Business Intelligence Platform
 
-Implementation of the NEXUS Master Blueprint (v6): a two-project system that turns the
-**Global E-Commerce & Supply Chain Database** into a queryable warehouse (Project 2), then
-puts an agentic AI Business Analyst on top of it (Project 1), and scores that analyst against
-the external **BI-Bench** benchmark.
+**An AI analyst that investigates why, not just what — built on a real data warehouse, with document-grounded evidence and an honest confidence level on every answer.**
+
+![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-teal) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791)
+
+## The problem this solves
+
+Most "chat with your data" demos stop at translating a question into SQL. NEXUS goes a step further: a supervisor routes a business question to a SQL agent (warehouse), an ML agent (trained models) and a RAG agent (business documents in pgvector). An investigation step merges the results, an evidence checker sets a confidence level and flags missing corroboration, and a business analyst writes the answer, separating correlation from causation.
+
+## Architecture
 
 ```
-nexus/
-├── data/raw/                    8 source CSVs (your uploaded dataset, already included)
-├── project2_analytics/          Foundation: warehouse, KPIs, ML models, dashboard
-│   ├── ingestion/                CSV -> PostgreSQL loader
-│   ├── sql/                      star schema + KPI views
-│   ├── ml/                       forecasting / churn / anomaly / supplier-risk training
-│   └── dashboard/                Streamlit dashboard
-├── project1_agentic/            AI layer: SQL / ML / RAG agents + supervisor + API
-│   ├── agents/                   LangGraph-style agents (supervisor, sql, ml, rag,
-│   │                             investigation, evidence checker, business analyst)
-│   ├── api/                      FastAPI app exposing /investigate
-│   └── rag/                      pgvector setup + document ingestion
-├── evaluation/                   Internal benchmark + BI-Bench runner
-├── deployment/                   Docker + AWS (Terraform) + CI/CD
-└── docs/                         Architecture notes
+                      USER QUESTION
+                           |
+                  NEXUS SUPERVISOR (intent routing)
+                           |
+      +--------------------+--------------------+
+      v                    v                    v
+  SQL AGENT            ML AGENT             RAG AGENT
+      |                    |                    |
+ PostgreSQL          Forecast/Churn/         pgvector
+ warehouse       Anomaly/Supplier-risk    (policies, reports)
+      +--------------------+--------------------+
+                           v
+                INVESTIGATION AGENT
+                           v
+                  EVIDENCE CHECKER  (confidence + caveats)
+                           v
+                  BUSINESS ANALYST  ->  answer + evidence
 ```
 
-## 1. Local quick start (Docker Compose)
+## Status (only what has been run and observed)
 
-```bash
-cp .env.example .env                 # fill in OPENAI/ANTHROPIC key etc.
-docker compose up -d --build         # postgres + api + dashboard
-docker compose exec api python project2_analytics/ingestion/load_csv_to_postgres.py
-docker compose exec api psql -U nexus_user -d nexus_db -f project2_analytics/sql/schema_star.sql
-docker compose exec api psql -U nexus_user -d nexus_db -f project2_analytics/sql/kpi_views.sql
-docker compose exec api python project2_analytics/ml/train_all.py
-```
-
-- Dashboard: http://localhost:8501
-- Agent API: http://localhost:8000/docs
-
-## 2. What each stage does
-
-| Stage | Component | Command |
+| Component | Status | Notes |
 |---|---|---|
-| Ingestion | `project2_analytics/ingestion/load_csv_to_postgres.py` | loads the 8 CSVs into `raw_*` tables |
-| Warehouse | `project2_analytics/sql/schema_star.sql` | builds `dim_*` / `fact_*` star schema |
-| KPIs | `project2_analytics/sql/kpi_views.sql` | revenue, AOV, churn, returns, inventory, supplier, marketing views |
-| ML | `project2_analytics/ml/train_all.py` | demand forecast, churn, anomaly, supplier risk models -> `models/` |
-| Dashboard | `project2_analytics/dashboard/app.py` | Streamlit views over the KPI layer |
-| Agents | `project1_agentic/agents/*.py` | SQL / ML / RAG / Investigation / Evidence / Analyst |
-| API | `project1_agentic/api/main.py` | FastAPI `/investigate` endpoint, orchestrates the agents |
-| Evaluation | `evaluation/internal_benchmark.py`, `evaluation/bibench_runner.py` | scoring |
-| Deployment | `deployment/` | Docker images, AWS Terraform, GitHub Actions CI/CD |
+| Ingestion + star schema (`dim_*`, `fact_*`) | Working | 8 CSVs, 100,000 transactions, referential checks pass |
+| KPI views + Streamlit dashboard | Working | Sales, customers, returns, operations, marketing |
+| `/investigate` (SQL + RAG, Gemini) | Working | Answers grounded in warehouse rows and retrieved documents |
+| Ask tab in the dashboard | Working | Calls `/investigate` from inside the dashboard |
+| ML models | Trained, baseline quality | See metrics below; not yet tuned or wired into routing |
+| Supervisor | Plain Python | LangGraph is in `requirements.txt` but not used yet |
+| Chart output from the agent | Not built | |
+| Internal benchmark | Not run | 6 sample questions exist, no ground truth yet |
+| BI-Bench | Not run | Runner is a placeholder |
+| AWS deployment | Not deployed | Terraform written, never applied |
 
-## 3. Fairness / data-safety guardrails (from the blueprint, enforced in code)
+### Measured ML baselines (single run, time-based split for forecasting)
 
-- `project2_analytics/ml/features.py` drops `gender`, `age`, `country` before any model
-  ever sees a feature table (`build_feature_frame(..., strip_protected=True)`), and flags
-  small subgroups (`gender=Other`, `country=Sweden`) with a `low_confidence` marker.
-- `price_elasticity` from `price_history.csv` is never included as a model feature — it is
-  only used in `project2_analytics/ml/validate_elasticity.py` as a sanity check against a
-  price/units-sold-derived estimate.
-- The agentic SQL layer is **read-only**: see `deployment/aws/terraform/main.tf` (RDS user
-  grants) and `project1_agentic/agents/sql_agent.py` (query validator rejects
-  DROP/DELETE/UPDATE/INSERT/ALTER, enforces row limits + timeouts).
+| Model | Result |
+|---|---|
+| Demand forecast (XGBoost) | MAE 7.39, RMSE 10.69, RMSPE 1.71 |
+| Churn (Random Forest) | ROC-AUC 0.764, F1 0.653 |
+| Anomaly detection (Isolation Forest) | 33 of 1,096 days flagged, mostly December peaks |
+| Supplier risk (Gradient Boosting) | macro-F1 0.552 (only 2 of 3 classes learned) |
 
-## 4. Cloud deployment (AWS)
+These are first-pass numbers on a synthetic dataset, not production claims.
 
-See `deployment/README.md` for the full walkthrough. Short version:
+## Key design decisions
+
+- **`price_elasticity` is never a model feature.** It is a fixed constant per product in the raw data, so training on it would leak the label. It is used only as a validation check.
+- **Protected attributes never reach a model.** `gender`, `age`, `country` are stripped before feature frames are built; small subgroups get a low-confidence flag.
+- **The SQL agent is read-only by construction:** a dedicated Postgres role with SELECT-only grants, plus a validator that blocks write keywords, unknown tables and queries without a LIMIT, with a statement timeout.
+- **Confidence is evidence-based.** It rises when SQL and document evidence agree, and the analyst is told to separate correlation from causation. It does not perform formal causal inference.
+
+## Data (not included in this repo)
+
+The dataset is not committed. Download **Global E-Commerce & Supply Chain Database** from Kaggle (`parsakh/global-e-commerce-and-supply-chain-database`) and place the 8 CSVs in `data/raw/`:
 
 ```bash
-cd deployment/aws/scripts
-./push_data_to_s3.sh              # uploads data/raw/*.csv to an S3 data lake bucket
-cd ../terraform
-terraform init && terraform apply  # provisions RDS Postgres + ECR + ECS Fargate + ALB
-python ../scripts/load_s3_to_rds.py  # loads the CSVs from S3 into the new RDS instance
+pip install kaggle          # needs ~/.kaggle/kaggle.json
+kaggle datasets download -d parsakh/global-e-commerce-and-supply-chain-database
+unzip global-e-commerce-and-supply-chain-database.zip -d data/raw/
 ```
 
-CI/CD (`deployment/github_actions/ci-cd.yml`) builds the API + dashboard images, pushes to
-ECR, and updates the ECS services on every push to `main`.
+## Quick start
 
-## 5. BI-Bench evaluation
+```bash
+git clone https://github.com/rohitsharma2408/NEXUS.git && cd NEXUS
+cp .env.example .env        # set LLM_PROVIDER, LLM_MODEL and the matching API key
+docker compose up -d --build
 
-`evaluation/bibench_runner.py` clones/consumes `github.com/Hu-Chuxuan/bi-agent`, runs NEXUS's
-`/investigate` endpoint against each case's natural-language question, and scores it against
-that case's ground truth. This is external validation only — see the blueprint's scope note:
-a BI-Bench score proves general BI navigation skill, not that the agents understand *this*
-company. Do not conflate the two when reporting results.
+# load data and build the warehouse (psql lives in the postgres container; -T is required for piped input)
+docker compose exec api python project2_analytics/ingestion/load_csv_to_postgres.py
+docker compose exec -T postgres psql -U nexus_user -d nexus_db < project2_analytics/sql/schema_star.sql
+docker compose exec -T postgres psql -U nexus_user -d nexus_db < project2_analytics/sql/kpi_views.sql
+docker compose exec -T postgres psql -U nexus_user -d nexus_db < project1_agentic/rag/pgvector_setup.sql
+
+# train models, then load the sample business documents for RAG
+docker compose exec api python project2_analytics/ml/train_all.py
+docker compose exec api python project1_agentic/rag/ingest_documents.py
+```
+
+- Dashboard: http://localhost:8501 (start on the **Ask the Analyst** tab)
+- API docs: http://localhost:8000/docs
+
+**LLM providers:** set `LLM_PROVIDER` to `gemini`, `groq`, `openai` or `anthropic`. Model names change; list what your key can use rather than guessing. The Gemini free tier is rate-limited (each question makes several LLM calls).
+
+**Data range:** the dataset spans Jan 2022 – Dec 2024, so ask about specific periods, not "last month".
+
+## Project structure
+
+```
+project2_analytics/   ingestion, star schema + KPI SQL, ML training, dashboard
+project1_agentic/     supervisor, SQL/ML/RAG agents, evidence checker, FastAPI app, RAG documents
+evaluation/           internal benchmark + BI-Bench runner (placeholders)
+deployment/           Dockerfiles, AWS Terraform, CI/CD
+docs/                 architecture notes
+```
+
+## Roadmap
+
+- [ ] Real BI dashboards (Metabase) alongside the fixed Streamlit views
+- [ ] Agent returns charts; retries failed SQL; multi-step investigations
+- [ ] Rework the ML layer (proper labels, tuning, saved metrics, persistent MLflow)
+- [ ] Internal benchmark with ground-truth answers, then a BI-Bench subset ([Hu-Chuxuan/bi-agent](https://github.com/Hu-Chuxuan/bi-agent)); a BI-Bench score measures generalization to unfamiliar schemas, not understanding of this company
+- [ ] Deploy to AWS with the existing Terraform (roughly $30–60/month if left running)
