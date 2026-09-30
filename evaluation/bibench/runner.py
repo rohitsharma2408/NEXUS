@@ -97,7 +97,15 @@ def run_case(case_id: str, question: str, case_dir: str, gt_dir: str) -> dict:
             error = None
             break
         except Exception as e:
-            error = str(e)[:300]
+            # pandas/SQLAlchemy echoes the entire failing query inside the exception
+            # message before the real reason, so keeping the FIRST N chars (the old
+            # behavior) threw away the actual error on any non-trivial query and left
+            # the retry with nothing useful to fix itself with. Strip the echoed SQL
+            # and keep the real message instead.
+            msg = str(e)
+            if sql and sql in msg:
+                msg = msg.replace(sql, "<query>")
+            error = msg[-400:]
 
     gt_files = sorted(glob.glob(os.path.join(gt_dir, f"{case_id}_*.csv")) + glob.glob(os.path.join(gt_dir, f"{case_id}.csv")))
     gt_list = []

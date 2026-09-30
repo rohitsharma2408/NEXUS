@@ -10,25 +10,33 @@ Most "chat with your data" demos stop at translating a question into SQL. NEXUS 
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    Q["User question"] --> S["Supervisor<br/>(intent routing)"]
+
+    S --> SQL["SQL Agent"]
+    S --> ML["ML Agent"]
+    S --> RAG["RAG Agent"]
+
+    SQL --> DB[("PostgreSQL<br/>warehouse")]
+    ML --> MODELS[("Forecast, Churn,<br/>Anomaly, Supplier-risk")]
+    RAG --> VEC[("pgvector<br/>policies, reports")]
+
+    DB --> INV["Investigation Agent"]
+    MODELS --> INV
+    VEC --> INV
+
+    INV --> EC["Evidence Checker<br/>(confidence level + caveats)"]
+    EC --> BA["Business Analyst"]
+    BA --> OUT["Answer + Evidence + Confidence"]
+
+    classDef store fill:#1a1a2e,stroke:#666,color:#eee
+    class DB,MODELS,VEC store
 ```
-                      USER QUESTION
-                           |
-                  NEXUS SUPERVISOR (intent routing)
-                           |
-      +--------------------+--------------------+
-      v                    v                    v
-  SQL AGENT            ML AGENT             RAG AGENT
-      |                    |                    |
- PostgreSQL          Forecast/Churn/         pgvector
- warehouse       Anomaly/Supplier-risk    (policies, reports)
-      +--------------------+--------------------+
-                           v
-                INVESTIGATION AGENT
-                           v
-                  EVIDENCE CHECKER  (confidence + caveats)
-                           v
-                  BUSINESS ANALYST  ->  answer + evidence
-```
+
+*Not yet built: chart output, multi-step investigation, and LangGraph orchestration — see
+the roadmap below. The diagram above reflects what actually runs today, not the full
+blueprint vision.*
 
 ## Status (only what has been run and observed)
 
@@ -42,7 +50,7 @@ Most "chat with your data" demos stop at translating a question into SQL. NEXUS 
 | Supervisor | Plain Python | LangGraph is in `requirements.txt` but not used yet |
 | Chart output from the agent | Not built | |
 | Internal benchmark | Not run | 6 sample questions exist, no ground truth yet |
-| BI-Bench | Not run | Runner is a placeholder |
+| BI-Bench | 30% (6/20), one pilot run | 20-case size-capped pilot, baseline agent, no data-management tools. See `docs/bibench_pilot.md`. Comparable paper baselines: GPT-4o 27.1%, DeepSeek-V4-Pro 23.5% (SQL, no-tool) |
 | AWS deployment | Not deployed | Terraform written, never applied |
 
 ### Measured ML baselines (single run, time-based split for forecasting)
@@ -103,7 +111,7 @@ docker compose exec api python project1_agentic/rag/ingest_documents.py
 ```
 project2_analytics/   ingestion, star schema + KPI SQL, ML training, dashboard
 project1_agentic/     supervisor, SQL/ML/RAG agents, evidence checker, FastAPI app, RAG documents
-evaluation/           internal benchmark + BI-Bench runner (placeholders)
+evaluation/           internal benchmark + BI-Bench pilot runner (20-case pilot: 30%)
 deployment/           Dockerfiles, AWS Terraform, CI/CD
 docs/                 architecture notes
 ```
@@ -113,5 +121,6 @@ docs/                 architecture notes
 - [ ] Real BI dashboards (Metabase) alongside the fixed Streamlit views
 - [ ] Agent returns charts; retries failed SQL; multi-step investigations
 - [ ] Rework the ML layer (proper labels, tuning, saved metrics, persistent MLflow)
-- [ ] Internal benchmark with ground-truth answers, then a BI-Bench subset ([Hu-Chuxuan/bi-agent](https://github.com/Hu-Chuxuan/bi-agent)); a BI-Bench score measures generalization to unfamiliar schemas, not understanding of this company
+- [ ] Internal benchmark with ground-truth answers
+- [x] BI-Bench pilot (20 cases, 30%) — scale to the ~50 cases under 25MB, or run "+tools" mode
 - [ ] Deploy to AWS with the existing Terraform (roughly $30–60/month if left running)
