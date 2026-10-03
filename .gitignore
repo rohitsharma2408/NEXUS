@@ -14,3 +14,5 @@ terraform.tfvars
 *.save
 *.bak
 .env.save
+.env.txt
+.env.txt

@@ -15,16 +15,24 @@ plotly==5.22.0
 fastapi==0.111.0
 uvicorn[standard]==0.30.1
 pydantic==2.7.4
-langchain==0.2.5
-langchain-community==0.2.5
-langgraph==0.1.5
 pgvector==0.2.5
 openai==1.35.3
+httpx==0.27.2
 anthropic==0.28.0
 google-generativeai==0.7.1
+# Pinned to stop pip's resolver backtracking through ~35 candidate versions each build
+# (google-generativeai -> google-ai-generativelanguage -> google-api-core[grpc] has a wide
+# compatible range; pinning the versions pip already proved compatible skips the search).
+google-api-core==2.30.3
+grpcio==1.84.0
+grpcio-status==1.62.3
 
-# --- Evaluation / cloud ---
-boto3==1.34.131
+# --- Evaluation ---
 requests==2.32.3
 tqdm==4.66.4
-httpx==0.27.2
+
+# NOTE: langchain / langchain-community / langgraph / boto3 are intentionally NOT here.
+# None are imported anywhere in project1_agentic, project2_analytics, or evaluation yet
+# (LangGraph orchestration is still on the roadmap; boto3 is only used by the standalone
+# deployment/aws/scripts/*.py, which run locally against AWS, not inside these containers).
+# Add them back here when that code actually starts importing them — see docs/architecture.md.
