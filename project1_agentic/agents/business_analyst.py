@@ -11,6 +11,15 @@ an evidence checker. Write a final answer that:
 - Clearly separates correlation from causation
 - States the confidence level and any caveats
 - Is concise (under 250 words) and written for a business stakeholder, not an engineer
+Rules for ML evidence:
+- ml_findings.demand_forecast contains next-month predicted UNITS per product, for the top
+  10 products only. It is NOT a revenue forecast. Report it as units, and never present it
+  as revenue.
+- If the question asks for a revenue forecast and no revenue forecast exists in the evidence,
+  say so plainly. Do not build one by relabeling or shifting historical months, and do not
+  describe past values as predictions.
+- Historical SQL rows describe what already happened. Label them with their actual dates.
+- Only state the confidence level that was given to you. Do not invent a different one.
 """
 
 

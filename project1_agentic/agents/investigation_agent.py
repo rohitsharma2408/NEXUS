@@ -23,7 +23,7 @@ def combine(question: str, sql_result, ml_results: list, rag_result) -> Investig
     notes = []
     if sql_result.rejected_reason:
         notes.append(f"SQL query was rejected by the safety validator: {sql_result.rejected_reason}")
-    if not sql_result.rows:
+    if sql_result.sql and not sql_result.rows:
         notes.append("No rows returned from the warehouse for this question.")
     if rag_result and not rag_result.chunks:
         notes.append("No supporting business documents were retrieved.")
