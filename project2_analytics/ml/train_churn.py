@@ -10,7 +10,6 @@ import joblib
 import mlflow
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, f1_score, classification_report
 
 from features import read_sql, build_feature_frame, flag_low_confidence, assert_no_forbidden_columns
@@ -57,16 +56,29 @@ def main():
 
     df = load_data()
     feature_cols = ["total_orders", "total_revenue", "tenure_days", "is_premium"]
-    X = build_feature_frame(df[feature_cols + ["customer_id"]].drop(columns=["customer_id"]))
-    assert_no_forbidden_columns(X)
-    y = df["churned"]
 
-    X_train, X_test, y_train, y_test, lc_train, lc_test = train_test_split(
-        X, y, df["low_confidence"], test_size=0.2, random_state=42, stratify=y
-    )
+    # Time-based split (not random) per the blueprint's Section 9 requirement: the
+    # earliest-registered 80% of eligible customers train the model, the most-recently-
+    # registered 20% test it, so the model is evaluated the way it would actually be used —
+    # predicting churn for customers it hasn't seen the full history of yet.
+    # Split by a DATE THRESHOLD, not a row-count index: with real registration dates,
+    # multiple customers share the same day, so an index-based cut can split same-day
+    # customers across both train and test. A date threshold keeps every same-day
+    # customer together on one side, so there's no ambiguity at the boundary.
+    df_sorted = df.sort_values("registration_date").reset_index(drop=True)
+    split_idx = int(len(df_sorted) * 0.8)
+    boundary_date = df_sorted.iloc[split_idx]["registration_date"]
+    train_df = df_sorted[df_sorted["registration_date"] < boundary_date]
+    test_df = df_sorted[df_sorted["registration_date"] >= boundary_date]
+
+    X_train = build_feature_frame(train_df[feature_cols])
+    X_test = build_feature_frame(test_df[feature_cols])
+    y_train, y_test = train_df["churned"], test_df["churned"]
+    lc_test = test_df["low_confidence"]
 
     with mlflow.start_run(run_name="rf_churn"):
         model = RandomForestClassifier(n_estimators=300, max_depth=8, random_state=42, class_weight="balanced")
+        assert_no_forbidden_columns(X_train)
         model.fit(X_train, y_train)
 
         proba = model.predict_proba(X_test)[:, 1]

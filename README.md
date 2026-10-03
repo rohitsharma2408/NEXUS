@@ -58,9 +58,9 @@ blueprint vision.*
 | Model | Result |
 |---|---|
 | Demand forecast (XGBoost) | MAE 7.39, RMSE 10.69, RMSPE 1.71 |
-| Churn (Random Forest) | ROC-AUC 0.764, F1 0.653 |
+| Churn (Random Forest) | ROC-AUC 0.730, F1 0.661 (time-based split) |
 | Anomaly detection (Isolation Forest) | 33 of 1,096 days flagged, mostly December peaks |
-| Supplier risk (Gradient Boosting) | macro-F1 0.552 (only 2 of 3 classes learned) |
+| Supplier risk | Rule-based (SQL view), not a classifier | Previous classifier was circular (label and features overlapped); see `train_supplier_risk.py` |
 
 These are first-pass numbers on a synthetic dataset, not production claims.
 
@@ -119,7 +119,8 @@ docs/                 architecture notes
 ## Roadmap
 
 - [ ] Real BI dashboards (Metabase) alongside the fixed Streamlit views
-- [ ] Agent returns charts; retries failed SQL; multi-step investigations
+- [x] SQL agent retries failed queries with the real error fed back (main app + BI-Bench pilot)
+- [ ] Agent returns charts; multi-step investigations
 - [ ] Rework the ML layer (proper labels, tuning, saved metrics, persistent MLflow)
 - [ ] Internal benchmark with ground-truth answers
 - [x] BI-Bench pilot (20 cases, 30%) — scale to the ~50 cases under 25MB, or run "+tools" mode
