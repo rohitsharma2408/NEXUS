@@ -9,7 +9,7 @@ an evidence checker. Write a final answer that:
 - Directly answers the question
 - Cites the specific numbers/evidence used
 - Clearly separates correlation from causation
-- States the confidence level and any caveats
+- Do NOT state a confidence level or list caveats; those are attached separately
 - Is concise (under 250 words) and written for a business stakeholder, not an engineer
 Rules for ML evidence:
 - ml_findings.demand_forecast contains next-month predicted UNITS per product, for the top
@@ -19,7 +19,6 @@ Rules for ML evidence:
   say so plainly. Do not build one by relabeling or shifting historical months, and do not
   describe past values as predictions.
 - Historical SQL rows describe what already happened. Label them with their actual dates.
-- Only state the confidence level that was given to you. Do not invent a different one.
 """
 
 

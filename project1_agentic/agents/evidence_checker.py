@@ -1,8 +1,17 @@
 """
 Evidence Checker — verifies every claim against retrieved sources, flags
 correlation-vs-causation, and assigns a confidence level to the investigation.
+
+Two stages:
+  check()               before the answer is written: how many sources responded
+  apply_verification()  after the answer is written: are the answer's numbers in the evidence
 """
+import re
 from dataclasses import dataclass
+
+_CAUSAL_QUESTION = re.compile(
+    r"\b(why|cause|caused|causes|reason|reasons|driver|drivers|due to|because|explain|behind)\b", re.I
+)
 
 
 @dataclass
@@ -31,10 +40,39 @@ def check(investigation) -> EvidenceReport:
     # SQL/ML alone only show correlation/pattern, never mechanism.
     has_causal_evidence = has_rag
 
-    if has_sql and has_ml and not has_causal_evidence:
+    # Only relevant when the person is actually asking about causes.
+    if (has_sql and has_ml and not has_causal_evidence
+            and _CAUSAL_QUESTION.search(investigation.question or "")):
         caveats.append(
             "Numeric and model evidence show a pattern, not a confirmed cause — no document "
             "evidence (policy change, promotion end, supply disruption) was found to explain it."
         )
 
     return EvidenceReport(confidence=confidence, caveats=caveats, has_causal_evidence=has_causal_evidence)
+
+
+def apply_verification(report: dict, verification: dict) -> None:
+    """Adjust confidence/caveats in place using the number-verification result.
+
+    - Any unsupported figure: cap confidence at "low" and name the figures.
+    - All checked figures traced to evidence, and some evidence exists: a "low" rating that
+      came only from having a single source is raised to "medium". Never to "high" here;
+      "high" still requires SQL + ML + documents.
+    """
+    unsupported = verification.get("unsupported", [])
+    if unsupported:
+        report["confidence"] = "low"
+        report["caveats"].append(
+            "These figures in the answer could not be traced to the evidence: "
+            + ", ".join(unsupported)
+        )
+        return
+
+    ev = report.get("evidence", {})
+    has_data = (
+        bool(ev.get("sql", {}).get("rows"))
+        or any(ev.get("ml", {}).values())
+        or bool(ev.get("rag", {}).get("chunks"))
+    )
+    if verification.get("checked", 0) > 0 and has_data and report.get("confidence") == "low":
+        report["confidence"] = "medium"

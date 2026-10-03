@@ -26,6 +26,7 @@ class InvestigateResponse(BaseModel):
     caveats: list[str]
     evidence: dict
     routing: dict
+    verification: dict | None = None
 
 
 @app.get("/health")

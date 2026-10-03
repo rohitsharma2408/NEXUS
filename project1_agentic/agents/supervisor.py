@@ -14,6 +14,7 @@ import ml_agent
 import rag_agent
 import investigation_agent
 import evidence_checker
+import number_verifier
 import business_analyst
 from config import call_llm
 
@@ -79,4 +80,7 @@ def investigate(question: str) -> dict:
         "ml_type": decision.ml_type,
         "needs_rag": decision.needs_rag,
     }
-    return report
+    verification = number_verifier.verify_answer(report["answer"], investigation)
+    evidence_checker.apply_verification(report, verification)
+    report["verification"] = verification
+    return report	
