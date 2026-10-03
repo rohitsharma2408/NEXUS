@@ -8,6 +8,11 @@ from config import READONLY_DATABASE_URL
 
 EMBEDDING_DIM = 768  # matches gemini-embedding-001 output_dimensionality=768, see pgvector_setup.sql
 
+# Below this cosine-similarity score, a chunk is more likely noise than genuine evidence —
+# without this, retrieve() always returned its full k regardless of relevance, so an
+# off-topic question could still get 5 "evidence" chunks that don't actually support anything.
+MIN_SIMILARITY = 0.35
+
 
 def _embed(text_query: str) -> list[float]:
     """Swap for your embedding provider. Kept provider-agnostic on purpose."""
@@ -37,7 +42,7 @@ class RAGResult:
     chunks: list  # [{"document": str, "content": str, "score": float}]
 
 
-def retrieve(question: str, k: int = 5) -> RAGResult:
+def retrieve(question: str, k: int = 5, min_similarity: float = MIN_SIMILARITY) -> RAGResult:
     vector = _embed(question)
     engine = create_engine(READONLY_DATABASE_URL)
     sql = text("""
@@ -48,5 +53,9 @@ def retrieve(question: str, k: int = 5) -> RAGResult:
     """)
     with engine.connect() as conn:
         rows = conn.execute(sql, {"vector": str(vector), "k": k}).mappings().all()
-    chunks = [{"document": r["document_name"], "content": r["content"], "score": float(r["score"])} for r in rows]
+    chunks = [
+        {"document": r["document_name"], "content": r["content"], "score": float(r["score"])}
+        for r in rows
+        if r["score"] >= min_similarity
+    ]
     return RAGResult(chunks=chunks)
