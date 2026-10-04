@@ -16,12 +16,16 @@ from sqlalchemy import create_engine, text
 from config import READONLY_DATABASE_URL, SQL_ROW_LIMIT, SQL_TIMEOUT_MS, call_llm
 
 ALLOWED_TABLES = {
-    "dim_customer", "dim_product", "dim_date",
+    "dim_customer_safe", "dim_product", "dim_date",
     "fact_sales", "fact_returns", "fact_inventory",
     "fact_supplier_costs", "fact_marketing_spend", "v_price_history_for_agents",
     "kpi_revenue_by_month", "kpi_returns_rate_by_category", "kpi_inventory_turnover",
     "kpi_supplier_risk", "kpi_marketing_roi", "kpi_customer_cohort", "kpi_revenue_by_country_month",
 }
+# dim_customer itself is deliberately NOT in this list: it carries first_name/last_name.
+# The agent reads dim_customer_safe instead (see pii_masking.sql), which the nexus_readonly
+# role can actually query — direct SELECT on dim_customer was revoked from that role, so this
+# isn't just a prompt-level instruction, the database itself will reject the raw table.
 
 FORBIDDEN_KEYWORDS = re.compile(
     r"\b(DROP|DELETE|UPDATE|INSERT|ALTER|TRUNCATE|GRANT|REVOKE|CREATE|EXEC|CALL)\b", re.IGNORECASE
@@ -37,21 +41,13 @@ fact_returns(return_id, transaction_id, customer_id, product_id, return_date, re
 fact_inventory(product_id, category, stock_units, reorder_point, warehouse_location, last_restock_date)
 fact_supplier_costs(product_id, supplier_name, reliability_score, lead_time_days, min_order_qty, unit_cost_usd, is_primary)
 fact_marketing_spend(year_month, channel, spend_usd, actual_revenue_usd, roas, cac_usd)
-dim_customer(customer_id, country, age, gender, registration_date, is_premium)
+dim_customer_safe(customer_id, country, currency, age, gender, registration_date, is_premium, email_verified)
+   -- names and email are not available here on purpose; see pii_masking.sql
 dim_product(product_id, name, category, brand, unit_price_usd, unit_cost_usd, launch_date)
-v_price_history_for_agents(product_id, category, year_month, listed_price_usd, base_price_usd, competitor_price_usd, price_index, is_promotional, units_sold, revenue_usd, margin_pct)
--- pre-aggregated KPI views, already filtered to completed revenue; prefer these over fact_sales when they cover the question:
-kpi_revenue_by_month(month, total_revenue, total_profit, order_count, aov)
-kpi_revenue_by_country_month(country, month, revenue, profit, orders)
-kpi_returns_rate_by_category(category, return_count, total_sales, return_rate_pct)
-kpi_inventory_turnover(product_id, category, stock_units, reorder_point, units_sold_90d, months_of_stock, at_reorder_risk)
-kpi_supplier_risk(product_id, supplier_name, reliability_score, lead_time_days, min_order_qty, unit_cost_usd, stock_units, reorder_point, supplier_risk_level)
-kpi_marketing_roi(year_month, channel, spend_usd, actual_revenue_usd, roas, cac_usd, revenue_per_spend)
-kpi_customer_cohort(cohort_month, is_premium, customers, orders, revenue)
--- RULES: SQL only reports historical data. Never build a forecast or projection in SQL
--- (no shifting dates forward, no averaging past months as a "forecast"). For forecast or
--- prediction questions, return the relevant historical series only (e.g. monthly revenue
--- from kpi_revenue_by_month, ordered by month) and leave the prediction to the ML model.
+v_price_history_for_agents(product_id, category, year_month, listed_price_usd, competitor_price_usd, is_promotional, units_sold, revenue_usd, margin_pct)
+kpi_revenue_by_month, kpi_returns_rate_by_category, kpi_inventory_turnover, kpi_supplier_risk,
+kpi_marketing_roi, kpi_customer_cohort, kpi_revenue_by_country_month  -- pre-aggregated KPI views,
+   -- already filtered to completed revenue; prefer these over fact_sales when they cover the question
 """
 
 
