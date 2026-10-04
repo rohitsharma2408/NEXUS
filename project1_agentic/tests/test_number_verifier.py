@@ -70,6 +70,40 @@ def test_no_evidence_means_everything_unsupported():
     assert r["unsupported"] == ["$1,234,567"], r
 
 
+def test_dates_are_not_figures():
+    r = verify_answer("Between January 1 and December 31, 2022, 1 premium customer registered; "
+                      "on 31 December 2022 the count was 1,000 less than expected.", inv(rows=[{"count": 1}]))
+    assert r["unsupported"] == ["1,000"], r
+
+
+def test_plain_count_near_a_date_still_checked():
+    r = verify_answer("31 customers registered.", inv(rows=[{"count": 1}]))
+    assert r["unsupported"] == ["31"], r
+
+
+def test_small_count_confirmed_when_it_matches():
+    r = verify_answer("Exactly 1 premium customer registered between January 1 and December 31, 2022.",
+                      inv(question="How many premium customers registered in 2022?", rows=[{"count": 1}]))
+    assert r["supported"] == ["1"] and r["unsupported"] == [] and r["checked"] == 1, r
+
+
+def test_top_n_with_no_match_is_ignored_not_flagged():
+    r = verify_answer("Here are the top 5 months.", inv(rows=[{"count": 1}]))
+    assert r["checked"] == 0 and r["unsupported"] == [], r
+
+
+def test_date_digits_in_evidence_do_not_support_small_numbers():
+    r = verify_answer("There were 12 months.", inv(rows=[{"month": "2023-12-01T00:00:00Z"}]))
+    assert r["supported"] == [], r
+
+
+def test_known_limit_wrong_small_count_is_not_flagged():
+    # Documented weakness: a wrong small count (5 instead of 1) is ignored, not flagged,
+    # because small integers are only confirmed positively. Larger figures are still checked.
+    r = verify_answer("Exactly 5 premium customers registered.", inv(rows=[{"count": 1}]))
+    assert r["unsupported"] == [], r
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

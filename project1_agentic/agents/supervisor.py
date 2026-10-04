@@ -14,6 +14,7 @@ import ml_agent
 import rag_agent
 import investigation_agent
 import evidence_checker
+import number_verifier
 import business_analyst
 from config import call_llm
 
@@ -73,21 +74,13 @@ def investigate(question: str) -> dict:
     evidence = evidence_checker.check(investigation)
     report = business_analyst.write_report(investigation, evidence)
 
-    # Post-generation grounding check: verify the numbers actually WRITTEN in the answer
-    # trace back to real evidence, rather than only checking (pre-generation) which sources
-    # responded. Catches invented figures the earlier check structurally cannot see yet.
-    ungrounded, total_checked = evidence_checker.verify_grounding(report["answer"], investigation)
-    if ungrounded:
-        report["confidence"] = "low"
-        report["caveats"].append(
-            f"{len(ungrounded)} of {total_checked} numbers in this answer could not be "
-            f"matched to the underlying data and may be inaccurate: {ungrounded}"
-        )
-
     report["routing"] = {
         "needs_sql": decision.needs_sql,
         "needs_ml": decision.needs_ml,
         "ml_type": decision.ml_type,
         "needs_rag": decision.needs_rag,
     }
+    verification = number_verifier.verify_answer(report["answer"], investigation)
+    evidence_checker.apply_verification(report, verification)
+    report["verification"] = verification
     return report
