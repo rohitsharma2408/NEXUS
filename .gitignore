@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .env
 models/
+!models/demand_forecast.joblib
 mlruns/
 data/raw/*.csv
 !data/raw/.gitkeep
