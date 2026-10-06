@@ -44,13 +44,25 @@ def main():
         print("supplier_risk: rule-based distribution (from kpi_supplier_risk view)")
         print(counts.to_string())
         n_high = int(counts.get("HIGH", 0))
+        low_rel = df["reliability_score"] < 0.80
+        at_reorder = df["stock_units"] <= df["reorder_point"]
+        no_stock_row = int(df["stock_units"].isna().sum())
+        print("\nWhy the split looks like this (HIGH needs BOTH conditions below):")
+        print(f"  reliability < 0.80:           {int(low_rel.sum())}")
+        print(f"  stock <= reorder point:       {int(at_reorder.sum())}")
+        print(f"  both (= HIGH):                {int((low_rel & at_reorder).sum())}")
+        print(f"  no inventory row (never HIGH): {no_stock_row}")
+        print("  reliability_score quantiles:  " + ", ".join(
+            f"p{int(q*100)}={df['reliability_score'].quantile(q):.2f}" for q in (0.05, 0.25, 0.5, 0.75, 0.95)))
+        for k, v in {"n_rel_lt_070": int(low_rel.sum()), "n_at_reorder": int(at_reorder.sum()),
+                     "n_no_inventory_row": no_stock_row}.items():
+            mlflow.log_metric(k, v)
         if n_high == 0:
             print(
-                "\nNote: 0 suppliers currently flag HIGH. That can be a correctly quiet "
-                "period, or a sign the thresholds in kpi_supplier_risk need revisiting — "
-                "worth a human sanity check either way, not something this script can decide."
+                "\nNote: 0 suppliers currently flag HIGH. Check the counts above: if either "
+                "condition alone is empty, the threshold (not a quiet period) is the reason. "
+                "Thresholds are a business decision - change them in kpi_supplier_risk, not here."
             )
-
 
 if __name__ == "__main__":
     main()

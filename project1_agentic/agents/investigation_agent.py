@@ -9,9 +9,10 @@ class Investigation:
     ml_findings: dict
     rag_findings: dict
     notes: list = field(default_factory=list)
+    drilldown: dict = field(default_factory=dict)   # multi-step 'why did X change' decomposition
 
 
-def combine(question: str, sql_result, ml_results: list, rag_result) -> Investigation:
+def combine(question: str, sql_result, ml_results: list, rag_result, drilldown: dict | None = None) -> Investigation:
     sql_findings = {
         "sql": sql_result.sql,
         "rows": sql_result.rows,
@@ -34,4 +35,5 @@ def combine(question: str, sql_result, ml_results: list, rag_result) -> Investig
         ml_findings=ml_findings,
         rag_findings=rag_findings,
         notes=notes,
+        drilldown=drilldown or {},
     )

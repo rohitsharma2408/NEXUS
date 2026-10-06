@@ -31,8 +31,9 @@ grpcio-status==1.62.3
 requests==2.32.3
 tqdm==4.66.4
 
-# NOTE: langchain / langchain-community / langgraph / boto3 are intentionally NOT here.
-# None are imported anywhere in project1_agentic, project2_analytics, or evaluation yet
-# (LangGraph orchestration is still on the roadmap; boto3 is only used by the standalone
-# deployment/aws/scripts/*.py, which run locally against AWS, not inside these containers).
-# Add them back here when that code actually starts importing them — see docs/architecture.md.
+# --- Orchestration ---
+langgraph==1.2.12          # supervisor.investigate_graph (parallel fan-out); opt in with USE_LANGGRAPH=1
+
+# NOTE: langchain / langchain-community / boto3 are intentionally NOT here. Nothing imports them;
+# boto3 is only used by the standalone deployment/aws/scripts/*.py, which run locally against AWS.
+pytest

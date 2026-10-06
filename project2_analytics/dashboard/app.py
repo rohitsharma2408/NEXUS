@@ -41,6 +41,23 @@ with tab_ask:
                 st.metric("Confidence", str(data["confidence"]).capitalize())
                 for caveat in data.get("caveats", []):
                     st.warning(caveat)
+                for spec in data.get("charts", []):
+                    fig = px.line if spec["type"] == "line" else px.bar
+                    long = [{"x": x, "series": ser["name"], "y": y}
+                            for ser in spec["series"] for x, y in zip(spec["x"], ser["y"])]
+                    st.plotly_chart(
+                        fig(long, x="x", y="y", color="series", title=spec["title"],
+                            labels={"x": spec["x_label"], "y": spec["y_label"]}, **(
+                                {"markers": True} if spec["type"] == "line" else {"barmode": "group"})),
+                        use_container_width=True)
+                dd = data["evidence"].get("drilldown") or {}
+                if dd:
+                    with st.expander("Drill-down: what drove the change"):
+                        st.write(f"{dd['metric']}: {dd['baseline_value']:,.0f} to {dd['target_value']:,.0f} "
+                                 f"({dd['total_change_pct']}%)")
+                        for dim, items in dd["by_dimension"].items():
+                            st.markdown(f"**By {dim}**")
+                            st.dataframe(items)
                 sql_ev = data["evidence"]["sql"]
                 with st.expander("SQL used"):
                     st.code(sql_ev.get("sql", ""), language="sql")

@@ -107,6 +107,7 @@ def verify_answer(answer, investigation):
     n_question = len(ev)
     _walk(investigation.sql_findings.get("rows"), ev)
     _walk(investigation.ml_findings, ev)
+    _walk(getattr(investigation, "drilldown", None), ev)
     _walk(investigation.rag_findings.get("chunks"), ev)
     direct = sorted(set(ev))
 

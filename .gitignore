@@ -16,3 +16,6 @@ terraform.tfvars
 .env.save
 .env.txt
 .env.txt
+
+*.db
+mlflow_data/

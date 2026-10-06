@@ -60,6 +60,7 @@ def main():
     print("Now run schema_star.sql and kpi_views.sql against the RDS instance to finish setup:")
     print("  psql \"$DATABASE_URL\" -f project2_analytics/sql/schema_star.sql")
     print("  psql \"$DATABASE_URL\" -f project2_analytics/sql/kpi_views.sql")
+    print("  psql \"$DATABASE_URL\" -f project2_analytics/sql/pii_masking.sql")
     print("  psql \"$DATABASE_URL\" -f project1_agentic/rag/pgvector_setup.sql")
 
 

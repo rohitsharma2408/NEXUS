@@ -48,3 +48,19 @@ the real column names from your uploaded `archive__8_.zip` dataset (100,000 tran
   starting point, not the paper's actual metric.
 - The RAG Agent's `_embed()` only implements OpenAI embeddings; swap in Anthropic's or a
   local embedder if you'd rather not depend on OpenAI for that one piece.
+
+
+## Added since the first build
+
+| Capability | Where |
+|---|---|
+| PII masking (DB role + validator + output scrub) | `project2_analytics/sql/pii_masking.sql`, `agents/pii.py`, `agents/sql_agent.py` |
+| Audit logging (append-only, hash-chained) | `agents/audit.py`, `/audit/*` in `api/main.py` |
+| Seasonal demand forecast + walk-forward backtest | `ml/forecast_core.py`, `ml/train_forecasting.py`, `evaluation/forecast_backtest.py` |
+| Anomaly detection + labelled-injection evaluation | `ml/anomaly_core.py`, `evaluation/anomaly_eval.py` |
+| Internal benchmark with executable ground truth | `evaluation/internal_benchmark.py`, `evaluation/internal/questions.json` |
+| One shared NL-to-SQL core | `agents/nl2sql_core.py` (used by `sql_agent.py` and `evaluation/bibench/runner.py`) |
+| Multi-step investigation | `agents/investigation_playbook.py` |
+| LangGraph supervisor (parallel fan-out) | `agents/supervisor.py` (`USE_LANGGRAPH=1`) |
+| Charts | `agents/charts.py`, dashboard Ask tab |
+| Metabase | `docker-compose.yml`, `docs/metabase.md` |

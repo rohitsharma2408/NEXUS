@@ -8,6 +8,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "project2_analytics" / "ml"))
 from features import read_sql  # noqa: E402
+import forecast_core  # noqa: E402,F401  (needed so joblib can unpickle SeasonalIndex)
 from config import MODEL_DIR  # noqa: E402
 
 
@@ -25,20 +26,43 @@ def _load(name: str):
 
 
 def forecast_next_month(product_id: str | None = None) -> MLResult:
+    """Next-month UNITS forecast (not revenue). Same feature builder as training, so there is
+    no train/serve skew. Returns a total, a per-category split, top products, and the model's
+    measured holdout accuracy so the analyst can state how much to trust it."""
+    import numpy as np
+    import forecast_core as fc
+
     bundle = _load("demand_forecast")
-    model, feats = bundle["model"], bundle["features"]
-    query = "SELECT * FROM fact_price_history"
+    model, season, cats = bundle["model"], bundle["season"], bundle["categories"]
+    w = bundle.get("blend_weight_seasonal", 0.5)
+    raw = read_sql(
+        "SELECT product_id, category, year_month, listed_price_usd, base_price_usd, "
+        "competitor_price_usd, price_index, is_promotional, units_sold "
+        "FROM fact_price_history ORDER BY product_id, year_month"
+    )
+    panel = fc.build_panel(raw)
+    feats = fc.make_features(panel, season, categories=cats, with_target=False)
+    latest = feats.sort_values("midx").groupby("product_id").tail(1).copy()
     if product_id:
-        query += f" WHERE product_id = '{product_id}'"
-    df = read_sql(query + " ORDER BY product_id, year_month")
-    latest = df.sort_values("year_month").groupby("product_id").tail(1).copy()
-    latest["month_num"] = 1
-    latest["lag_units_sold"] = latest["units_sold"]
-    latest["is_promotional"] = latest["is_promotional"].astype(int)
-    X = latest[feats]
-    latest["predicted_next_month_units"] = model.predict(X)
+        latest = latest[latest["product_id"] == product_id]
+    pred_xgb = np.clip(model.predict(latest[bundle["features"]]), 0, None)
+    latest["predicted_next_month_units"] = (w * latest["level_x_season"].to_numpy()
+                                            + (1 - w) * pred_xgb).round(1)
+    target_ym = fc.idx_to_ym(int(latest["midx"].max()) + 1)
+    by_cat = (latest.groupby("category")["predicted_next_month_units"].sum().round(0)
+              .sort_values(ascending=False))
     top = latest.sort_values("predicted_next_month_units", ascending=False).head(10)
-    return MLResult("demand_forecast", {"predictions": top[["product_id", "predicted_next_month_units"]].to_dict("records")})
+    hm = bundle.get("holdout_metrics", {})
+    return MLResult("demand_forecast", {
+        "forecast_month": target_ym,
+        "unit": "units sold (not revenue)",
+        "total_predicted_units": round(float(latest["predicted_next_month_units"].sum()), 0),
+        "predicted_units_by_category": by_cat.to_dict(),
+        "predictions": top[["product_id", "predicted_next_month_units"]].to_dict("records"),
+        "accuracy_note": (f"Holdout MAE {hm.get('mae', float('nan')):.2f} units per product-month, "
+                          f"{hm.get('skill_vs_naive_pct', 0):+.1f}% vs a last-month guess; "
+                          "category totals are far more reliable than single products."),
+    })
 
 
 def get_recent_anomalies() -> MLResult:

@@ -57,7 +57,7 @@ SELECT
     i.stock_units,
     i.reorder_point,
     CASE
-        WHEN sc.reliability_score < 0.7 AND i.stock_units <= i.reorder_point THEN 'HIGH'
+        WHEN sc.reliability_score < 0.80 AND i.stock_units <= i.reorder_point THEN 'HIGH'
         WHEN sc.reliability_score < 0.85 THEN 'MEDIUM'
         ELSE 'LOW'
     END AS supplier_risk_level

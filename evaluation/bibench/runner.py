@@ -32,7 +32,9 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "project1_agentic"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "project1_agentic" / "agents"))
 from config import call_llm  # noqa: E402
+import nl2sql_core  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).parent))
 from sanitize import sanitize_name  # noqa: E402
@@ -77,8 +79,7 @@ def generate_sql(question: str, schema: dict[str, list[str]], retry_error: str |
     prompt = f"Schema:\n{schema_prompt(schema)}\n\nQuestion: {question}\n\nSQL:"
     if retry_error:
         prompt += f"\n\nYour previous SQL failed with this error, fix it:\n{retry_error}"
-    sql = call_llm(system, prompt, max_tokens=600).strip()
-    return re.sub(r"^```sql|```$", "", sql, flags=re.IGNORECASE | re.MULTILINE).strip()
+    return nl2sql_core.strip_fences(call_llm(system, prompt, max_tokens=600))
 
 
 def run_case(case_id: str, question: str, case_dir: str, gt_dir: str) -> dict:
@@ -87,25 +88,15 @@ def run_case(case_id: str, question: str, case_dir: str, gt_dir: str) -> dict:
     if not schema:
         return {"case": case_id, "status": "no_tables", "passed": False, "latency_s": 0}
 
-    sql, error, df = None, None, None
-    for attempt in range(2):  # one retry on SQL error, unlike the current sql_agent.py
-        try:
-            sql = generate_sql(question, schema, retry_error=error)
-            if FORBIDDEN.search(sql):
-                raise ValueError("forbidden statement type")
-            df = pd.read_sql_query(sql, conn)
-            error = None
-            break
-        except Exception as e:
-            # pandas/SQLAlchemy echoes the entire failing query inside the exception
-            # message before the real reason, so keeping the FIRST N chars (the old
-            # behavior) threw away the actual error on any non-trivial query and left
-            # the retry with nothing useful to fix itself with. Strip the echoed SQL
-            # and keep the real message instead.
-            msg = str(e)
-            if sql and sql in msg:
-                msg = msg.replace(sql, "<query>")
-            error = msg[-400:]
+    def validate(sql):
+        if FORBIDDEN.search(sql):
+            raise nl2sql_core.Rejected("forbidden statement type")
+
+    out = nl2sql_core.run_with_retry(
+        generate=lambda err: generate_sql(question, schema, retry_error=err),
+        execute=lambda sql: pd.read_sql_query(sql, conn),
+        validate=validate, max_attempts=2)
+    sql, error, df = out.sql, out.error, out.result
 
     gt_files = sorted(glob.glob(os.path.join(gt_dir, f"{case_id}_*.csv")) + glob.glob(os.path.join(gt_dir, f"{case_id}.csv")))
     gt_list = []

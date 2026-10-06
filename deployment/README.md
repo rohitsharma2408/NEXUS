@@ -12,6 +12,7 @@ docker compose up -d --build
 docker compose exec api python project2_analytics/ingestion/load_csv_to_postgres.py
 docker compose exec api psql "$DATABASE_URL" -f project2_analytics/sql/schema_star.sql
 docker compose exec api psql "$DATABASE_URL" -f project2_analytics/sql/kpi_views.sql
+docker compose exec api psql "$DATABASE_URL" -f project2_analytics/sql/pii_masking.sql
 docker compose exec api psql "$DATABASE_URL" -f project1_agentic/rag/pgvector_setup.sql
 docker compose exec api python project2_analytics/ml/train_all.py
 ```
@@ -63,6 +64,7 @@ python load_s3_to_rds.py --bucket "$S3_DATA_BUCKET"
 
 psql "$DATABASE_URL" -f ../../../project2_analytics/sql/schema_star.sql
 psql "$DATABASE_URL" -f ../../../project2_analytics/sql/kpi_views.sql
+psql "$DATABASE_URL" -f ../../../project2_analytics/sql/pii_masking.sql
 psql "$DATABASE_URL" -f ../../../project1_agentic/rag/pgvector_setup.sql
 ```
 

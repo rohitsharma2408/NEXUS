@@ -11,6 +11,11 @@ an evidence checker. Write a final answer that:
 - Clearly separates correlation from causation
 - Do NOT state a confidence level or list caveats; those are attached separately
 - Is concise (under 250 words) and written for a business stakeholder, not an engineer
+Rules for drilldown evidence (a deterministic multi-step decomposition of a period-over-period change):
+- Lead with the total change, then the members that explain most of it (share_of_total_change_pct),
+  then the seasonality context. If consistent_with_seasonality is true, say the same move occurs
+  in other years rather than presenting it as a new problem.
+- The drilldown shows WHERE a change happened, never WHY. Do not state a cause.
 Rules for ML evidence:
 - ml_findings.demand_forecast contains next-month predicted UNITS per product, for the top
   10 products only. It is NOT a revenue forecast. Report it as units, and never present it
@@ -27,6 +32,7 @@ def write_report(investigation, evidence_report) -> dict:
         "question": investigation.question,
         "sql_findings": investigation.sql_findings,
         "ml_findings": investigation.ml_findings,
+        "drilldown": getattr(investigation, "drilldown", {}),
         "rag_findings": investigation.rag_findings,
         "confidence": evidence_report.confidence,
         "caveats": evidence_report.caveats,
@@ -42,5 +48,6 @@ def write_report(investigation, evidence_report) -> dict:
             "sql": investigation.sql_findings,
             "ml": investigation.ml_findings,
             "rag": investigation.rag_findings,
+            "drilldown": getattr(investigation, "drilldown", {}),
         },
     }

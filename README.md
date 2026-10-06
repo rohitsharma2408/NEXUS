@@ -34,9 +34,8 @@ flowchart TD
     class DB,MODELS,VEC store
 ```
 
-*Not yet built: chart output, multi-step investigation, and LangGraph orchestration — see
-the roadmap below. The diagram above reflects what actually runs today, not the full
-blueprint vision.*
+*Not built on purpose: MCP and the AWS deployment (blueprint places them last). The diagram above
+reflects what actually runs.*
 
 ## Status (only what has been run and observed)
 
@@ -47,9 +46,15 @@ blueprint vision.*
 | `/investigate` (SQL + RAG, Gemini) | Working | Answers grounded in warehouse rows and retrieved documents |
 | Ask tab in the dashboard | Working | Calls `/investigate` from inside the dashboard |
 | ML models | Trained, baseline quality | See metrics below; not yet tuned or wired into routing |
-| Supervisor | Plain Python | LangGraph is in `requirements.txt` but not used yet |
-| Chart output from the agent | Not built | |
-| Internal benchmark | Not run | 6 sample questions exist, no ground truth yet |
+| Supervisor | Plain Python by default; LangGraph opt-in | `USE_LANGGRAPH=1` fans SQL / ML / RAG / drill-down out in parallel. Same step functions in both modes; tests run both |
+| Evidence Checker | Working | Verifies the actual numbers in the answer against retrieved evidence (`number_verifier.py`), not just source counts |
+| PII masking | Working, three layers | DB role has no access to names / e-mail / raw tables (`pii_masking.sql`); validator blocks PII columns and tables; output scrubbed. Tested against the live role |
+| Audit logging | Working | Append-only, hash-chained `agent_audit_log`; every SQL attempt, ML call, retrieval and answer; `/audit/verify` and `/audit/recent` (admin token) |
+| Multi-step investigation | Working | "Why did X change" runs a deterministic decomposition by country / category / channel plus a same-month-in-other-years check (`investigation_playbook.py`) |
+| Chart output from the agent | Working | Chart specs returned by `/investigate` and rendered in the dashboard Ask tab |
+| SQL agents | One shared core | `nl2sql_core.py` is used by both `sql_agent.py` (Postgres) and the BI-Bench runner (SQLite) |
+| Metabase | Compose service + docs | `docker compose up -d metabase`; connect as `nexus_readonly`. See `docs/metabase.md` |
+| Internal benchmark | 26 SQL questions with executable ground truth + safety set | `python evaluation/internal_benchmark.py validate` (no LLM needed). LLM accuracy needs an API key: `... agent` |
 | BI-Bench | 30% (6/20), one pilot run | 20-case size-capped pilot, baseline agent, no data-management tools. See `docs/bibench_pilot.md`. Comparable paper baselines: GPT-4o 27.1%, DeepSeek-V4-Pro 23.5% (SQL, no-tool) |
 | AWS deployment | Not deployed | Terraform written, never applied |
 
@@ -57,16 +62,17 @@ blueprint vision.*
 
 | Model | Result |
 |---|---|
-| Demand forecast (XGBoost) | MAE 7.39, RMSE 10.69, RMSPE 1.71 |
+| Demand forecast (seasonal level x index + XGBoost blend) | Walk-forward MAE 5.78 vs 8.09 for last-month-carried-forward (+28.6% skill); the previous model scored 8.81, worse than naive. See `docs/forecast_backtest.md` |
 | Churn (Random Forest) | ROC-AUC 0.730, F1 0.661 (time-based split) |
-| Anomaly detection (Isolation Forest) | 33 of 1,096 days flagged, mostly December peaks |
+| Anomaly detection (robust z-score on seasonality-removed residuals) | F1 0.79 vs 0.39 for the old Isolation Forest on planted anomalies; 6 of 1,096 real days flagged. Real data has no labels, so accuracy is measured by planting known anomalies in the real series. See `docs/anomaly_eval.md` |
 | Supplier risk | Rule-based (SQL view), not a classifier | Previous classifier was circular (label and features overlapped); see `train_supplier_risk.py` |
 
-These are first-pass numbers on a synthetic dataset, not production claims.
+These are first-pass numbers, not production claims. Product-month sales are noisy counts, so single-product forecasts stay noisy; category totals are far more reliable.
 
 ## Key design decisions
 
 - **`price_elasticity` is never a model feature.** It is a fixed constant per product in the raw data, so training on it would leak the label. It is used only as a validation check.
+- **The static `price_elasticity` does not match observed price response.** `project2_analytics/ml/validate_elasticity.py` found 498 products with enough price changes to estimate; among the 107 with reliable estimates, 46% differ significantly from the static value, sign agreement is 52%, and rank correlation is -0.04. Treat it as an assumed placeholder, not a measured elasticity, and do not use it for pricing decisions. Many derived values are positive, which points to confounding (promotions, seasonality), so the derived numbers are not a drop-in replacement either.
 - **Protected attributes never reach a model.** `gender`, `age`, `country` are stripped before feature frames are built; small subgroups get a low-confidence flag.
 - **The SQL agent is read-only by construction:** a dedicated Postgres role with SELECT-only grants, plus a validator that blocks write keywords, unknown tables and queries without a LIMIT, with a statement timeout.
 - **Confidence is evidence-based.** It rises when SQL and document evidence agree, and the analyst is told to separate correlation from causation. It does not perform formal causal inference.
@@ -92,6 +98,7 @@ docker compose up -d --build
 docker compose exec api python project2_analytics/ingestion/load_csv_to_postgres.py
 docker compose exec -T postgres psql -U nexus_user -d nexus_db < project2_analytics/sql/schema_star.sql
 docker compose exec -T postgres psql -U nexus_user -d nexus_db < project2_analytics/sql/kpi_views.sql
+docker compose exec -T postgres psql -U nexus_user -d nexus_db < project2_analytics/sql/pii_masking.sql   # strips PII access from the agent role
 docker compose exec -T postgres psql -U nexus_user -d nexus_db < project1_agentic/rag/pgvector_setup.sql
 
 # train models, then load the sample business documents for RAG

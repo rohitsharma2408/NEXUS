@@ -27,9 +27,10 @@ def check(investigation) -> EvidenceReport:
     has_ml = any(v for v in investigation.ml_findings.values())
     has_rag = bool(investigation.rag_findings.get("chunks"))
 
-    n_sources = sum([has_sql, has_ml, has_rag])
+    has_drill = bool(getattr(investigation, "drilldown", None))
+    n_sources = sum([has_sql, has_ml, has_rag, has_drill])
     if n_sources >= 2 and has_sql:
-        confidence = "high" if n_sources == 3 else "medium"
+        confidence = "high" if n_sources >= 3 else "medium"
     elif n_sources == 1:
         confidence = "low"
     else:
@@ -39,6 +40,16 @@ def check(investigation) -> EvidenceReport:
     # RAG documents can support a causal narrative (e.g. "a promotion ended on this date");
     # SQL/ML alone only show correlation/pattern, never mechanism.
     has_causal_evidence = has_rag
+
+    # A drill-down says WHERE the change happened (which country/category/channel) and whether
+    # the same move occurs every year; neither is a mechanism.
+    seas = (getattr(investigation, "drilldown", None) or {}).get("seasonality") or {}
+    if seas.get("consistent_with_seasonality"):
+        caveats.append("The same month-to-month move happened in other years, so this is likely "
+                       "seasonal rather than a new problem.")
+    elif has_drill and not has_causal_evidence and _CAUSAL_QUESTION.search(investigation.question or ""):
+        caveats.append("The drill-down shows where the change happened, not why: no document "
+                       "evidence of a cause (promotion end, outage, supply issue) was found.")
 
     # Only relevant when the person is actually asking about causes.
     if (has_sql and has_ml and not has_causal_evidence

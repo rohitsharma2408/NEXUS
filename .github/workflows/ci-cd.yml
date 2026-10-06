@@ -13,14 +13,60 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # A real Postgres, so the DB-backed tests (read-only role, PII grants, audit chain) actually run.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: nexus_user
+          POSTGRES_PASSWORD: change_me
+          POSTGRES_DB: nexus_db
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U nexus_user" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: nexus_user
+      PGPASSWORD: change_me
+      PGDATABASE: nexus_db
+      DATABASE_URL: postgresql+psycopg2://nexus_user:change_me@localhost:5432/nexus_db
+      READONLY_DATABASE_URL: postgresql+psycopg2://nexus_readonly:change_me_too@localhost:5432/nexus_db
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install -r requirements.txt
-      - run: pip install pytest
-      - run: pytest evaluation/tests -q || echo "No tests found yet"
+      - run: pip install -r requirements.txt pytest kaggle
+      - name: Download the REAL dataset (same source as the README)
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          kaggle datasets download -d parsakh/global-e-commerce-and-supply-chain-database
+          unzip -q global-e-commerce-and-supply-chain-database.zip -d data/raw/
+      - name: Build the warehouse from the real data
+        run: |
+          python project2_analytics/ingestion/load_csv_to_postgres.py
+          bash project2_analytics/sql/apply_all.sh
+          psql -c "ALTER ROLE nexus_readonly PASSWORD 'change_me_too'"
+      - name: Train the models on the real data
+        run: python project2_analytics/ml/train_all.py
+        env:
+          MODEL_DIR: models
+      - name: Offline unit tests (no DB, no LLM)
+        run: pytest project1_agentic/tests/test_number_verifier.py project1_agentic/tests/test_pii.py project1_agentic/tests/test_nl2sql_core.py evaluation/tests -q
+      - name: DB-backed tests on the real warehouse (read-only role, PII grants, audit chain, forecast, anomaly, charts, supervisor end-to-end)
+        run: pytest project1_agentic/tests project2_analytics/tests -q
+        env:
+          TEST_MODEL_DIR: models
+      - name: Benchmark self-validation (gold SQL on real data, mutants, adversarial SQL)
+        run: python evaluation/internal_benchmark.py validate
+        env:
+          MODEL_DIR: models
+      - name: Forecast backtest and anomaly evaluation on the real data
+        run: |
+          python evaluation/forecast_backtest.py
+          python evaluation/anomaly_eval.py
 
   build-and-deploy:
     needs: test

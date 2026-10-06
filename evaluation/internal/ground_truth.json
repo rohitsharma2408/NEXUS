@@ -1,0 +1,518 @@
+{
+ "sql-01": {
+  "question": "What was total completed revenue in 2024?",
+  "columns": [
+   "total_revenue"
+  ],
+  "rows": [
+   [
+    15542515.27
+   ]
+  ]
+ },
+ "sql-02": {
+  "question": "How many completed orders were placed in December 2023?",
+  "columns": [
+   "orders"
+  ],
+  "rows": [
+   [
+    3984
+   ]
+  ]
+ },
+ "sql-03": {
+  "question": "What was the total profit from completed orders in 2023?",
+  "columns": [
+   "total_profit"
+  ],
+  "rows": [
+   [
+    5227715.97
+   ]
+  ]
+ },
+ "sql-04": {
+  "question": "What are the top 5 countries by completed revenue across all years?",
+  "columns": [
+   "country",
+   "revenue"
+  ],
+  "rows": [
+   [
+    "usa",
+    14280083.72
+   ],
+   [
+    "uk",
+    7104878.35
+   ],
+   [
+    "germany",
+    4950984.39
+   ],
+   [
+    "france",
+    4600586.1
+   ],
+   [
+    "spain",
+    3880117.2
+   ]
+  ]
+ },
+ "sql-05": {
+  "question": "How many customers do we have in each country?",
+  "columns": [
+   "country",
+   "customers"
+  ],
+  "rows": [
+   [
+    "usa",
+    2451
+   ],
+   [
+    "uk",
+    1214
+   ],
+   [
+    "germany",
+    945
+   ],
+   [
+    "france",
+    828
+   ],
+   [
+    "canada",
+    605
+   ],
+   [
+    "italy",
+    543
+   ],
+   [
+    "spain",
+    478
+   ],
+   [
+    "netherlands",
+    367
+   ],
+   [
+    "australia",
+    353
+   ],
+   [
+    "sweden",
+    216
+   ]
+  ]
+ },
+ "sql-06": {
+  "question": "How many premium customers are there?",
+  "columns": [
+   "premium_customers"
+  ],
+  "rows": [
+   [
+    1749
+   ]
+  ]
+ },
+ "sql-07": {
+  "question": "What was completed revenue by sales channel in 2023?",
+  "columns": [
+   "channel",
+   "revenue"
+  ],
+  "rows": [
+   [
+    "organic_search",
+    4221184.98
+   ],
+   [
+    "email",
+    2243516.93
+   ],
+   [
+    "social_media",
+    2792144.76
+   ],
+   [
+    "paid_search",
+    3565583.1
+   ],
+   [
+    "direct",
+    1605479.58
+   ],
+   [
+    "referral",
+    1066192.43
+   ]
+  ]
+ },
+ "sql-08": {
+  "question": "Which 5 products sold the most units in completed orders?",
+  "columns": [
+   "product_id",
+   "units"
+  ],
+  "rows": [
+   [
+    "prod0055",
+    6052.0
+   ],
+   [
+    "prod0023",
+    2409.0
+   ],
+   [
+    "prod0276",
+    2378.0
+   ],
+   [
+    "prod0195",
+    2231.0
+   ],
+   [
+    "prod0415",
+    2213.0
+   ]
+  ]
+ },
+ "sql-09": {
+  "question": "How many orders were refunded?",
+  "columns": [
+   "refunded_orders"
+  ],
+  "rows": [
+   [
+    7126
+   ]
+  ]
+ },
+ "sql-10": {
+  "question": "What is the average discount percentage on completed orders that actually had a discount applied?",
+  "columns": [
+   "avg_discount_pct"
+  ],
+  "rows": [
+   [
+    0.096
+   ]
+  ]
+ },
+ "an-01": {
+  "question": "Which month had the highest completed revenue, and how much was it?",
+  "columns": [
+   "month",
+   "revenue"
+  ],
+  "rows": [
+   [
+    "2023-12",
+    2115457.41
+   ]
+  ]
+ },
+ "an-02": {
+  "question": "What was the percentage change in completed revenue from November 2024 to December 2024?",
+  "columns": [
+   "pct_change"
+  ],
+  "rows": [
+   [
+    8.21
+   ]
+  ]
+ },
+ "an-03": {
+  "question": "What was completed revenue in each quarter of 2023?",
+  "columns": [
+   "quarter",
+   "revenue"
+  ],
+  "rows": [
+   [
+    1,
+    2841154.53
+   ],
+   [
+    2,
+    3499500.45
+   ],
+   [
+    3,
+    3795383.29
+   ],
+   [
+    4,
+    5358063.51
+   ]
+  ]
+ },
+ "an-04": {
+  "question": "What is the average order value (completed revenue per completed order) for each year?",
+  "columns": [
+   "year",
+   "aov"
+  ],
+  "rows": [
+   [
+    2024,
+    529.36
+   ],
+   [
+    2023,
+    530.33
+   ],
+   [
+    2022,
+    529.0
+   ]
+  ]
+ },
+ "an-05": {
+  "question": "What is the profit margin (profit divided by revenue, in percent) by product category on completed orders?",
+  "columns": [
+   "category",
+   "margin_pct"
+  ],
+  "rows": [
+   [
+    "electronics",
+    20.62
+   ],
+   [
+    "home & kitchen",
+    36.45
+   ],
+   [
+    "books",
+    31.27
+   ],
+   [
+    "clothing",
+    52.36
+   ],
+   [
+    "sports & outdoors",
+    41.71
+   ],
+   [
+    "toys & games",
+    47.1
+   ],
+   [
+    "beauty & health",
+    57.58
+   ]
+  ]
+ },
+ "an-06": {
+  "question": "Which month in 2024 had the most completed orders?",
+  "columns": [
+   "month",
+   "order_count"
+  ],
+  "rows": [
+   [
+    "2024-12",
+    3903
+   ]
+  ]
+ },
+ "mt-01": {
+  "question": "Which product category has the highest return rate, and what is it?",
+  "columns": [
+   "category",
+   "return_rate_pct"
+  ],
+  "rows": [
+   [
+    "clothing",
+    7.31
+   ]
+  ]
+ },
+ "mt-02": {
+  "question": "Compare total completed revenue from premium and non-premium customers.",
+  "columns": [
+   "is_premium",
+   "revenue"
+  ],
+  "rows": [
+   [
+    "false",
+    36270116.65
+   ],
+   [
+    "true",
+    10238702.05
+   ]
+  ]
+ },
+ "mt-03": {
+  "question": "How many products are currently at or below their reorder point?",
+  "columns": [
+   "at_risk"
+  ],
+  "rows": [
+   [
+    60
+   ]
+  ]
+ },
+ "mt-04": {
+  "question": "Which 3 marketing channels had the best return on ad spend (total revenue divided by total spend) in 2024?",
+  "columns": [
+   "channel",
+   "roas"
+  ],
+  "rows": [
+   [
+    "direct",
+    112.59
+   ],
+   [
+    "organic_search",
+    65.24
+   ],
+   [
+    "email",
+    57.48
+   ]
+  ]
+ },
+ "mt-05": {
+  "question": "What are the top 5 return reasons by total refund amount?",
+  "columns": [
+   "reason",
+   "refunded"
+  ],
+  "rows": [
+   [
+    "defective",
+    931699.99
+   ],
+   [
+    "not_as_described",
+    894772.28
+   ],
+   [
+    "changed_mind",
+    774882.22
+   ],
+   [
+    "wrong_item",
+    738439.06
+   ],
+   [
+    "late_delivery",
+    374422.7
+   ]
+  ]
+ },
+ "mt-06": {
+  "question": "What are the top 5 Electronics products by completed revenue?",
+  "columns": [
+   "product_id",
+   "revenue"
+  ],
+  "rows": [
+   [
+    "prod0276",
+    1769691.39
+   ],
+   [
+    "prod0468",
+    834203.47
+   ],
+   [
+    "prod0216",
+    790738.91
+   ],
+   [
+    "prod0115",
+    705543.19
+   ],
+   [
+    "prod0318",
+    519650.96
+   ]
+  ]
+ },
+ "mt-07": {
+  "question": "How many customers who registered in 2022 placed at least one completed order in 2024?",
+  "columns": [
+   "customers"
+  ],
+  "rows": [
+   [
+    6
+   ]
+  ]
+ },
+ "mt-08": {
+  "question": "How many primary-supplier products are rated HIGH supplier risk?",
+  "columns": [
+   "high_risk"
+  ],
+  "rows": [
+   [
+    0
+   ]
+  ]
+ },
+ "mt-09": {
+  "question": "What share of completed 2024 revenue came from each product category? Give percentages.",
+  "columns": [
+   "category",
+   "share_pct"
+  ],
+  "rows": [
+   [
+    "electronics",
+    45.58
+   ],
+   [
+    "home & kitchen",
+    13.76
+   ],
+   [
+    "books",
+    1.33
+   ],
+   [
+    "clothing",
+    16.75
+   ],
+   [
+    "sports & outdoors",
+    14.81
+   ],
+   [
+    "toys & games",
+    2.71
+   ],
+   [
+    "beauty & health",
+    5.05
+   ]
+  ]
+ },
+ "mt-10": {
+  "question": "How many returns were filed for Clothing products?",
+  "columns": [
+   "returns"
+  ],
+  "rows": [
+   [
+    1874
+   ]
+  ]
+ }
+}

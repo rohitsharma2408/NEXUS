@@ -1,0 +1,5 @@
+*.db
+mlruns/
+mlflow_data/
+__pycache__/
+.env

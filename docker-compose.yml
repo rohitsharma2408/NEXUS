@@ -29,9 +29,15 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    environment:
+      # LangGraph parallel orchestration is opt-in: set USE_LANGGRAPH=1 in .env
+      USE_LANGGRAPH: ${USE_LANGGRAPH:-0}
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-file:///app/mlflow_data/mlruns}
+      GIT_PYTHON_REFRESH: quiet
     volumes:
       - ./data:/app/data
       - ./models:/app/models
+      - nexus_mlflow:/app/mlflow_data
 
   dashboard:
     build:
@@ -45,5 +51,25 @@ services:
     ports:
       - "8501:8501"
 
+  # BI layer: ad-hoc dashboards on the warehouse. Connect it as `nexus_readonly` (not nexus_user) so
+  # BI users get the same PII-free view as the agent. Setup steps: docs/metabase.md
+  metabase:
+    image: metabase/metabase:v0.50.24
+    container_name: nexus_metabase
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: ${METABASE_APP_DB:-metabase_app}
+      MB_DB_PORT: 5432
+      MB_DB_USER: ${POSTGRES_USER:-nexus_user}
+      MB_DB_PASS: ${POSTGRES_PASSWORD:-change_me}
+      MB_DB_HOST: postgres
+    ports:
+      - "3000:3000"
+
 volumes:
   nexus_pgdata:
+  nexus_mlflow:

@@ -88,7 +88,11 @@ def main():
         f1 = f1_score(y_test, preds)
 
         mlflow.log_metrics({"roc_auc": auc, "f1": f1})
-        mlflow.sklearn.log_model(model, "model")
+        joblib.dump({"model": model, "features": feature_cols}, f"{MODEL_DIR}/churn.joblib")  # the artifact the API loads
+        try:
+            mlflow.sklearn.log_model(model, "model")
+        except Exception as e:   # newer MLflow refuses to serialise sklearn trees; the joblib above is what matters
+            print(f"[mlflow] model artifact not logged ({type(e).__name__}); metrics were logged")
 
         joblib.dump({"model": model, "features": feature_cols}, f"{MODEL_DIR}/churn.joblib")
 
