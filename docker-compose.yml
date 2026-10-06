@@ -38,6 +38,8 @@ services:
       - ./data:/app/data
       - ./models:/app/models
       - nexus_mlflow:/app/mlflow_data
+      - ./docs:/app/docs
+      - ./evaluation:/app/evaluation
 
   dashboard:
     build:
