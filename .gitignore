@@ -22,3 +22,6 @@ terraform.tfvars
 mlflow_data/
 
 *.save
+
+.venv/
+venv/
