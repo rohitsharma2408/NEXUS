@@ -25,24 +25,42 @@ _NUM = re.compile(
 _MULT = {"%": 1.0, "k": 1e3, "thousand": 1e3, "m": 1e6, "million": 1e6, "b": 1e9, "billion": 1e9}
 _MAX_BASE = 300  # cap on evidence values used for pairwise derivation
 
+# Dates are not figures: "December 31", "31 December 2022", "2023-12-01" must not be checked
+# (otherwise a day-of-month like 31 is reported as an unsupported number).
+_MONTH = (r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|"
+          r"Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)")
+_DATE_PATTERNS = [
+    re.compile(rf"\b{_MONTH}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?\b(?:,?\s+\d{{4}}\b)?", re.I),
+    re.compile(rf"\b\d{{1,2}}(?:st|nd|rd|th)?\s+(?:of\s+)?{_MONTH}\b(?:,?\s+\d{{4}}\b)?", re.I),
+    re.compile(r"\b\d{4}-\d{2}(?:-\d{2})?(?:[T ]\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?Z?)?"),
+]
+
+
+def _mask_dates(text):
+    for pat in _DATE_PATTERNS:
+        text = pat.sub(lambda m: " " * len(m.group(0)), text)
+    return text
+
 
 def _parse(m, apply_skips):
     dollar, whole, frac, suffix = m.group(1), m.group(2), m.group(3), m.group(4)
     suffix = suffix.strip().lower() if suffix else None
     bare = not dollar and not frac and not suffix and "," not in whole
     n = abs(int(whole.replace(",", "")))
-    if apply_skips and bare and (n <= 12 or 1900 <= n <= 2100):
-        return None
+    soft = bool(apply_skips and bare and (n <= 12 or 1900 <= n <= 2100))
     decimals = len(frac) - 1 if frac else 0
     mult = _MULT.get(suffix, 1.0) if suffix else 1.0
     value = float(whole.replace(",", "") + (frac or "")) * mult
     unit = (10 ** -decimals) * mult
-    return {"text": m.group(0).strip(), "value": value, "unit": unit, "pct": suffix == "%"}
+    return {"text": m.group(0).strip(), "value": value, "unit": unit, "pct": suffix == "%", "soft": soft}
 
 
 def extract_numbers(text, apply_skips=True):
     out = []
-    for m in _NUM.finditer(text or ""):
+    text = text or ""
+    if apply_skips:
+        text = _mask_dates(text)
+    for m in _NUM.finditer(text):
         p = _parse(m, apply_skips)
         if p:
             out.append(p)
@@ -56,7 +74,7 @@ def _walk(obj, out):
         if obj == obj:  # drop NaN
             out.append(float(obj))
     elif isinstance(obj, str):
-        out.extend(p["value"] for p in extract_numbers(obj, apply_skips=False))
+        out.extend(p["value"] for p in extract_numbers(_mask_dates(obj), apply_skips=False))
     elif isinstance(obj, dict):
         for v in obj.values():
             _walk(v, out)
@@ -122,6 +140,13 @@ def verify_answer(answer, investigation):
         if key in seen:
             continue
         seen.add(key)
+        if p["soft"]:
+            # Counts like "1", "5" and bare years are mostly ordinals, dates and "top N".
+            # Confirm them when they match the evidence exactly; never flag them otherwise.
+            if _near(direct, p["value"], 0.5):
+                result["checked"] += 1
+                result["supported"].append(p["text"])
+            continue
         result["checked"] += 1
         cands = [p["value"]] + ([p["value"] / 100] if p["pct"] else [])
         tol = p["unit"] * 1.001 + 1e-9
