@@ -19,3 +19,5 @@ terraform.tfvars
 
 *.db
 mlflow_data/
+
+*.save
