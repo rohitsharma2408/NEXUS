@@ -1,0 +1,7 @@
+{
+  "q80": 2.452,
+  "q90": 2.985,
+  "s2": 4.062,
+  "k_category": 1.5,
+  "note": "Per product: forecast +/- q * sqrt(max(forecast, 1)). Category total: z * k_category * sqrt(s2 * total). Written by evaluation/forecast_intervals.py; see docs/forecast_intervals.md."
+}

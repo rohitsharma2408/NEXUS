@@ -25,6 +25,16 @@ def _load(name: str):
     return joblib.load(path)
 
 
+def _interval_calibration():
+    """Interval constants written by evaluation/forecast_intervals.py (None if not generated)."""
+    import json
+    path = Path(__file__).resolve().parents[2] / "evaluation" / "forecast_interval_calibration.json"
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+
+
 def forecast_next_month(product_id: str | None = None) -> MLResult:
     """Next-month UNITS forecast (not revenue). Same feature builder as training, so there is
     no train/serve skew. Returns a total, a per-category split, top products, and the model's
@@ -48,21 +58,38 @@ def forecast_next_month(product_id: str | None = None) -> MLResult:
     pred_xgb = np.clip(model.predict(latest[bundle["features"]]), 0, None)
     latest["predicted_next_month_units"] = (w * latest["level_x_season"].to_numpy()
                                             + (1 - w) * pred_xgb).round(1)
+    cal = _interval_calibration()
+    cols = ["product_id", "predicted_next_month_units"]
+    if cal:
+        p = latest["predicted_next_month_units"].to_numpy()
+        sc = np.sqrt(np.maximum(p, 1.0))
+        latest["low_80"] = np.clip(p - cal["q80"] * sc, 0, None).round(0)
+        latest["high_80"] = (p + cal["q80"] * sc).round(0)
+        cols += ["low_80", "high_80"]
     target_ym = fc.idx_to_ym(int(latest["midx"].max()) + 1)
     by_cat = (latest.groupby("category")["predicted_next_month_units"].sum().round(0)
               .sort_values(ascending=False))
     top = latest.sort_values("predicted_next_month_units", ascending=False).head(10)
     hm = bundle.get("holdout_metrics", {})
-    return MLResult("demand_forecast", {
+    summary = {
         "forecast_month": target_ym,
         "unit": "units sold (not revenue)",
         "total_predicted_units": round(float(latest["predicted_next_month_units"].sum()), 0),
         "predicted_units_by_category": by_cat.to_dict(),
-        "predictions": top[["product_id", "predicted_next_month_units"]].to_dict("records"),
+        "predictions": top[cols].to_dict("records"),
         "accuracy_note": (f"Holdout MAE {hm.get('mae', float('nan')):.2f} units per product-month, "
                           f"{hm.get('skill_vs_naive_pct', 0):+.1f}% vs a last-month guess; "
                           "category totals are far more reliable than single products."),
-    })
+    }
+    if cal:
+        summary["interval_note"] = ("low_80/high_80 are 80% ranges for one product-month (wide: single products are "
+                                    "noisy); category ranges are the planning level.")
+        if not product_id:
+            tot = latest.groupby("category")["predicted_next_month_units"].sum()
+            half = 1.2816 * cal["k_category"] * np.sqrt(cal["s2"] * tot)
+            summary["category_ranges_80"] = {
+                c: [int(round(max(tot[c] - half[c], 0))), int(round(tot[c] + half[c]))] for c in tot.index}
+    return MLResult("demand_forecast", summary)
 
 
 def get_recent_anomalies() -> MLResult:

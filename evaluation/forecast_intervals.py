@@ -8,6 +8,7 @@ Writes docs/forecast_intervals.md. Run: python evaluation/forecast_intervals.py
 """
 import sys
 from statistics import NormalDist
+import json
 from pathlib import Path
 
 import numpy as np
@@ -66,6 +67,7 @@ raw = read_sql("""SELECT product_id, category, year_month, listed_price_usd, bas
 panel = fc.build_panel(raw)
 wp = {lab: window_preds(panel, s, e) for lab, s, e in WINDOWS}
 labels = [w[0] for w in WINDOWS]
+CAL = {}
 
 md = ["# Forecast prediction intervals", "",
       "Split-conformal intervals around the blend forecast (0.5 level_x_season + 0.5 xgb_seasonal), "
@@ -73,7 +75,7 @@ md = ["# Forecast prediction intervals", "",
       "Coverage is measured on the test half-year, so it checks the intervals on data they never saw. The category-month width uses a fixed spread factor K=1.5 relative to independent product errors: errors of products in the same category are positively correlated, and the realised factor was 1.13, 1.38 and about 1.5 in the three completed half-years after the first (the first, 2.47, came from a model with only 12 months of history). Coverage reported for those folds is therefore in-sample for that one constant.", ""]
 
 for lvl in LEVELS:
-    fold_rows, parts, cm_rows = [], [], []
+    fold_rows, parts, cm_rows, s2_list = [], [], [], []
     for i in range(1, len(labels)):
         cal, te = wp[labels[i - 1]], wp[labels[i]]
         q = cq(np.abs(cal["target"] - cal["pred"]) / scale_of(cal["pred"]), lvl)
@@ -86,6 +88,8 @@ for lvl in LEVELS:
         hist = [wp[labels[i - 1]]]   # most recent earlier fold only: the model state closest to the test fold
         s2 = np.mean(np.concatenate([((h["target"] - h["pred"]).to_numpy() ** 2) / np.maximum(h["pred"].to_numpy(), 1.0)
                                      for h in hist]))
+
+        s2_list.append(float(s2))
 
         def cm_stats(frame):
             a = catmonth(frame)
@@ -103,6 +107,7 @@ for lvl in LEVELS:
         half = NormalDist().inv_cdf(0.5 + lvl / 2) * k * sd
         c2 = (ta["Y"] - ta["P"]).abs().to_numpy() <= half
         cm_rows.append((labels[i], len(ta), float(np.mean(c2)), float(np.mean(half / ta["P"].to_numpy()))))
+    CAL[lvl] = {"q": float(np.mean([r[4] for r in fold_rows])), "s2": float(np.mean(s2_list[-2:]))}
     pool = pd.concat(parts)
     pool["vol"] = pd.qcut(pool["pred"], 3, labels=["low", "mid", "high"])
     g = pool.groupby("vol", observed=True).agg(mean_pred=("pred", "mean"), coverage=("cov", "mean"),
@@ -120,6 +125,13 @@ for lvl in LEVELS:
 
 text = "\n".join(md)
 print(text)
+cal_path = ROOT / "evaluation" / "forecast_interval_calibration.json"
+cal_path.write_text(json.dumps({
+    "q80": round(CAL[0.8]["q"], 3), "q90": round(CAL[0.9]["q"], 3),
+    "s2": round(CAL[0.8]["s2"], 3), "k_category": K_CM,
+    "note": "Per product: forecast +/- q * sqrt(max(forecast, 1)). Category total: z * k_category * sqrt(s2 * total). "
+            "Written by evaluation/forecast_intervals.py; see docs/forecast_intervals.md."}, indent=2) + "\n")
+print(f"written: {cal_path}")
 out = ROOT / "docs" / "forecast_intervals.md"
 out.parent.mkdir(exist_ok=True)
 out.write_text(text + "\n")
