@@ -70,6 +70,8 @@ jobs:
 
   build-and-deploy:
     needs: test
+    # Deploys to AWS only on a manual run (Actions > Run workflow); needs the AWS_* repository secrets.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
