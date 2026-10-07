@@ -29,10 +29,3 @@ Product-month sales are noisy counts (mean about 13 units, lag-1 autocorrelation
 so a large part of the error is irreducible at the single-product level. The
 category-month column shows the error after products are summed, which is the level
 planning decisions are made at.
-Follow-up check for what else could explain the extra noise (checked on the warehouse): there is no
-shared month or category-month shock (variance explained equals the chance level), promotions,
-competitor price and price index have no measurable effect on units sold, marketing spend is not
-significant (36 monthly points, correlation about 0.25), `units_sold` equals the transaction
-quantity in `fact_sales` exactly (correlation 1.000), and residuals have no month-to-month
-carryover (lag-1 autocorrelation -0.024). The remaining error is independent per product-month,
-and no data in the warehouse explains it.
