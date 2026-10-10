@@ -232,24 +232,19 @@
  "an-03": {
   "question": "What was completed revenue in each quarter of 2023?",
   "columns": [
-   "quarter",
    "revenue"
   ],
   "rows": [
    [
-    1,
     2841154.53
    ],
    [
-    2,
     3499500.45
    ],
    [
-    3,
     3795383.29
    ],
    [
-    4,
     5358063.51
    ]
   ]

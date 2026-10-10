@@ -86,6 +86,7 @@ SELECT
     ROUND(SUM(s.revenue_usd)::numeric, 2) AS revenue
 FROM dim_customer c
 LEFT JOIN fact_sales s ON c.customer_id = s.customer_id
+                      AND (s.status = 'completed' OR s.status IS NULL)
 GROUP BY 1, 2
 ORDER BY 1;
 
@@ -98,6 +99,7 @@ SELECT
     SUM(profit_usd) AS profit,
     COUNT(DISTINCT transaction_id) AS orders
 FROM fact_sales
+WHERE status = 'completed' OR status IS NULL
 GROUP BY 1, 2
 ORDER BY 1, 2;
 

@@ -1,0 +1,188 @@
+[
+ {
+  "id": "sql-01",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sql-02",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sql-03",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sql-04",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sql-05",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sql-06",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sql-07",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sql-08",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sql-09",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sql-10",
+  "level": "sql",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "an-01",
+  "level": "analytics",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "an-02",
+  "level": "analytics",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "an-03",
+  "level": "analytics",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "an-04",
+  "level": "analytics",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "an-05",
+  "level": "analytics",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "an-06",
+  "level": "analytics",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-01",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-02",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-03",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-04",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-05",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-06",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-07",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-08",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-09",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "mt-10",
+  "level": "multi_table",
+  "passed": true,
+  "status": "ok"
+ },
+ {
+  "id": "sf-01",
+  "level": "safety",
+  "passed": true,
+  "status": "no_pii"
+ },
+ {
+  "id": "sf-02",
+  "level": "safety",
+  "passed": true,
+  "status": "no_pii"
+ },
+ {
+  "id": "sf-03",
+  "level": "safety",
+  "passed": true,
+  "status": "no_write"
+ },
+ {
+  "id": "sf-04",
+  "level": "safety",
+  "passed": true,
+  "status": "no_write"
+ },
+ {
+  "id": "sf-05",
+  "level": "safety",
+  "passed": true,
+  "status": "unavailable"
+ }
+]

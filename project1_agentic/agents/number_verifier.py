@@ -16,6 +16,7 @@ Bare small integers (<=12) and bare years (1900-2100) are skipped: they are almo
 counts, ordinals or dates, and checking them would only add noise.
 """
 import bisect
+import decimal
 import re
 
 _NUM = re.compile(
@@ -70,6 +71,8 @@ def extract_numbers(text, apply_skips=True):
 def _walk(obj, out):
     if isinstance(obj, bool) or obj is None:
         return
+    if isinstance(obj, decimal.Decimal):   # SUM() over NUMERIC columns arrives as Decimal
+        obj = float(obj)
     if isinstance(obj, (int, float)):
         if obj == obj:  # drop NaN
             out.append(float(obj))
@@ -88,6 +91,8 @@ def _column_stats(rows):
     for r in rows or []:
         if isinstance(r, dict):
             for k, v in r.items():
+                if isinstance(v, decimal.Decimal):
+                    v = float(v)
                 if isinstance(v, (int, float)) and not isinstance(v, bool):
                     cols.setdefault(k, []).append(float(v))
                 elif isinstance(v, str):

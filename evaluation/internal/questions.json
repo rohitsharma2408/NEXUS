@@ -116,7 +116,7 @@
       "id": "an-03",
       "level": "analytics",
       "question": "What was completed revenue in each quarter of 2023?",
-      "gold_sql": "SELECT EXTRACT(QUARTER FROM month)::int AS quarter, ROUND(SUM(total_revenue)::numeric,2) AS revenue FROM kpi_revenue_by_month WHERE month >= '2023-01-01' AND month < '2024-01-01' GROUP BY 1 LIMIT 4",
+      "gold_sql": "SELECT ROUND(SUM(total_revenue)::numeric,2) AS revenue FROM kpi_revenue_by_month WHERE month >= '2023-01-01' AND month < '2024-01-01' GROUP BY EXTRACT(QUARTER FROM month) LIMIT 4",
       "mutants": [
         "SELECT EXTRACT(QUARTER FROM month)::int, ROUND(AVG(total_revenue)::numeric,2) FROM kpi_revenue_by_month WHERE month >= '2023-01-01' AND month < '2024-01-01' GROUP BY 1 LIMIT 4"
       ]
