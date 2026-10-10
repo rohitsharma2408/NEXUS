@@ -14,6 +14,12 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY project2_analytics/ ./project2_analytics/
 
 ENV PYTHONUNBUFFERED=1
+ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+    STREAMLIT_THEME_BASE=dark \
+    STREAMLIT_THEME_PRIMARY_COLOR="#FFC247" \
+    STREAMLIT_THEME_BACKGROUND_COLOR="#14112B" \
+    STREAMLIT_THEME_SECONDARY_BACKGROUND_COLOR="#1D1A3A" \
+    STREAMLIT_THEME_TEXT_COLOR="#EEEBFF"
 EXPOSE 8501
 
 CMD ["streamlit", "run", "project2_analytics/dashboard/app.py", "--server.address=0.0.0.0", "--server.port=8501"]

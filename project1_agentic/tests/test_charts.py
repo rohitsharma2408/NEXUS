@@ -85,3 +85,46 @@ def test_only_values_from_the_evidence_are_plotted(monthly):
     out = charts.build_charts(inv(rows=monthly))
     allowed = {float(r[k]) for r in monthly for k in ("total_revenue", "order_count")}
     assert {y for s in out[0]["series"] for y in s["y"]} <= allowed
+
+
+# ---- multi-row-per-month data, and pie requests (real warehouse rows) ------------------------
+@pytest.fixture(scope="module")
+def marketing():
+    return q("SELECT year_month, channel, spend_usd FROM kpi_marketing_roi ORDER BY year_month, channel")
+
+
+def test_real_channel_per_month_rows_become_one_line_per_channel(marketing):
+    c = charts.chart_from_rows(marketing)
+    assert c["type"] == "line"
+    assert {s["name"] for s in c["series"]} == {r["channel"] for r in marketing}
+    assert len(set(c["x"])) == len(c["x"]) and c["x"] == sorted(c["x"])      # one point per month: no zigzag
+    assert all(len(s["y"]) == len(c["x"]) for s in c["series"])
+    plotted = sum(v for s in c["series"] for v in s["y"] if v is not None)
+    assert abs(plotted - sum(float(r["spend_usd"]) for r in marketing)) < 0.01   # nothing lost or invented
+
+
+def test_real_repeated_months_without_a_category_are_summed():
+    rows = q("SELECT year_month, spend_usd, actual_revenue_usd FROM kpi_marketing_roi ORDER BY year_month")
+    c = charts.chart_from_rows(rows)
+    assert len(set(c["x"])) == len(c["x"])
+    assert abs(sum(c["series"][0]["y"]) - sum(float(r["spend_usd"]) for r in rows)) < 0.01
+
+
+def test_pie_request_on_real_monthly_revenue_keeps_the_total(monthly):
+    c = charts.chart_from_rows(monthly, prefer_pie=True)
+    assert c["type"] == "pie" and len(c["x"]) <= charts.MAX_PIE_SLICES
+    assert c["x"][-1].startswith("Other")                                   # 36 months folded into 12 slices
+    assert abs(sum(c["series"][0]["y"]) - sum(float(r["total_revenue"]) for r in monthly)) < 0.01
+
+
+def test_build_charts_puts_the_requested_pie_first(monthly):
+    investigation = inv(rows=monthly)
+    investigation.question = "give me the pie chart of monthly sales"
+    out = charts.build_charts(investigation)
+    assert out[0]["type"] == "pie" and any(ch["type"] == "line" for ch in out[1:])
+    assert charts.spec_to_plotly_dict(out[0])["data"][0]["type"] == "pie"
+
+
+def test_pie_of_real_categories(by_category):
+    c = charts.chart_from_rows(by_category, prefer_pie=True)
+    assert c["type"] == "pie" and set(c["x"]) == {r["category"] for r in by_category}
